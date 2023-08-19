@@ -5,8 +5,9 @@
  * @format
  */
 
-import React, { useState, useEffect } from 'react';
-import type {PropsWithChildren} from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Dimensions } from 'react-native';
+import YoutubePlayer from "react-native-youtube-iframe";
 import {
   SafeAreaView,
   ScrollView,
@@ -25,9 +26,12 @@ import {
   ReloadInstructions,
 } from 'react-native/Libraries/NewAppScreen';
 
+const youtubeHeight = Dimensions.get('window').width / 16 * 9;
+
 function App(): JSX.Element {
   const [subtitles, setSubtitles] = useState([]);
-  const [youtubeUrl, setYoutubeUrl] = useState(String);
+  const [videoId, setVideoId] = useState(String);
+  const [captionIndex, setCaptionIndex] = useState(Number)
 
   useEffect(() => {
     const fetchYoutubeSubtitles = async () => { 
@@ -53,8 +57,14 @@ function App(): JSX.Element {
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
       >
-        <Header />
         <View>
+
+          <YoutubePlayer
+          height={youtubeHeight}
+          play={true}
+          videoId="lhr4Ax4C_-4"
+          // onChangeState={}
+        />
         </View>
         <View>
           {
@@ -69,24 +79,5 @@ function App(): JSX.Element {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
-  },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: '600',
-  },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
-  },
-  highlight: {
-    fontWeight: '700',
-  },
-});
 
 export default App;
