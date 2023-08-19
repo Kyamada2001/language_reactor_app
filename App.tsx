@@ -5,7 +5,7 @@
  * @format
  */
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import type {PropsWithChildren} from 'react';
 import {
   SafeAreaView,
@@ -25,44 +25,33 @@ import {
   ReloadInstructions,
 } from 'react-native/Libraries/NewAppScreen';
 
-type SectionProps = PropsWithChildren<{
-  title: string;
-}>;
-
-function Section({children, title}: SectionProps): JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
-  return (
-    <View style={styles.sectionContainer}>
-      <Text
-        style={[
-          styles.sectionTitle,
-          {
-            color: isDarkMode ? Colors.white : Colors.black,
-          },
-        ]}>
-        {title}
-      </Text>
-      <Text
-        style={[
-          styles.sectionDescription,
-          {
-            color: isDarkMode ? Colors.light : Colors.dark,
-          },
-        ]}>
-        {children}
-      </Text>
-    </View>
-  );
-}
-
 function App(): JSX.Element {
   const isDarkMode = useColorScheme() === 'dark';
+  const [subtitles, setSubtitles] = useState([]);
+  const [youtubeUrl, setYoutubeUrl] = useState(String);
 
-  fetchYoutubeSubtitles();
   const backgroundStyle = {
     backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
   };
 
+  useEffect(() => {
+    const fetchYoutubeSubtitles = async () => { 
+      const response = await fetch('http://localhost:9000/2015-03-31/functions/function/invocations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}),
+      });
+      const subtitles = await response.json().then((data) => {
+        return JSON.parse(data.body);
+      });
+      setSubtitles(subtitles[0]);
+    }
+
+    fetchYoutubeSubtitles();
+  }, [])
+  
   return (
     <SafeAreaView style={backgroundStyle}>
       <StatusBar
@@ -77,20 +66,15 @@ function App(): JSX.Element {
           style={{
             backgroundColor: isDarkMode ? Colors.black : Colors.white,
           }}>
-          <Section title="Step One">
-            Edit <Text style={styles.highlight}>App.tsx</Text> to change this
-            screen and then come back to see your edits.
-          </Section>
-          <Section title="See Your Changes">
-            <ReloadInstructions />
-          </Section>
-          <Section title="Debug">
-            <DebugInstructions />
-          </Section>
-          <Section title="Learn More">
-            Read the docs to discover what to do next:
-          </Section>
-          <LearnMoreLinks />
+        </View>
+        <View>
+          {
+            subtitles.length > 0 ?
+            subtitles.map((item: any, itemIndex: any) => (
+              <Text key={itemIndex}>{item.text}</Text>
+            ))
+            : <Text>字幕を表示中です。</Text>
+          }
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -115,18 +99,5 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 });
-
-const fetchYoutubeSubtitles = async () => {
-  const response = await fetch('http://localhost:9000/2015-03-31/functions/function/invocations', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({}),
-  });
-  const data = await response.json();
-  console.log(data);
-  return data;
-}
 
 export default App;
