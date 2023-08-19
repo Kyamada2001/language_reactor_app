@@ -26,13 +26,8 @@ import {
 } from 'react-native/Libraries/NewAppScreen';
 
 function App(): JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
   const [subtitles, setSubtitles] = useState([]);
   const [youtubeUrl, setYoutubeUrl] = useState(String);
-
-  const backgroundStyle = {
-    backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
-  };
 
   useEffect(() => {
     const fetchYoutubeSubtitles = async () => { 
@@ -53,19 +48,13 @@ function App(): JSX.Element {
   }, [])
 
   return (
-    <SafeAreaView style={backgroundStyle}>
-      <StatusBar
-        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={backgroundStyle.backgroundColor}
-      />
+    <SafeAreaView>
+      <StatusBar/>
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
-        style={backgroundStyle}>
+      >
         <Header />
-        <View
-          style={{
-            backgroundColor: isDarkMode ? Colors.black : Colors.white,
-          }}>
+        <View>
         </View>
         <View>
           {
