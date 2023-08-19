@@ -51,7 +51,7 @@ function App(): JSX.Element {
 
     fetchYoutubeSubtitles();
   }, [])
-  
+
   return (
     <SafeAreaView style={backgroundStyle}>
       <StatusBar
@@ -70,8 +70,8 @@ function App(): JSX.Element {
         <View>
           {
             subtitles.length > 0 ?
-            subtitles.map((item: any, itemIndex: any) => (
-              <Text key={itemIndex}>{item.text}</Text>
+            subtitles.map((subtitle: any, index: any) => (
+              <Text key={index}>{subtitle.text}</Text>
             ))
             : <Text>字幕を表示中です。</Text>
           }
