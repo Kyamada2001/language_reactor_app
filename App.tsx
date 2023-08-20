@@ -16,6 +16,7 @@ import {
   Text,
   useColorScheme,
   View,
+  Pressable
 } from 'react-native';
 
 import {
@@ -31,12 +32,13 @@ const youtubeHeight = Dimensions.get('window').width / 16 * 9;
 function App(): JSX.Element {
   const playerRef: any = useRef();
   const [subtitles, setSubtitles] = useState([]);
-  const [videoId, setVideoId] = useState(String);
+  const [videoId, setVideoId] = useState("lhr4Ax4C_-4");
 
   const [captionIndex, setCaptionIndex] = useState(Number);
   const [currCaptions, setCurrCaptions] = useState(Array<Object>)
   // const [charCaption, setCharCaption] = useState(Array<Array<String>>) この機能の実装はまだ先
   const [currentTime, setCurrentTime] = useState(Number);
+  const [pressedVideo, setPressedVideo] = useState(Boolean)
 
   useEffect(() => {
     const fetchYoutubeSubtitles = async () => { 
@@ -45,7 +47,9 @@ function App(): JSX.Element {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({}),
+        body: JSON.stringify({
+          videoId: videoId
+        }),
       });
       const subtitles = await response.json().then((data) => {
         return JSON.parse(data.body);
@@ -78,18 +82,28 @@ function App(): JSX.Element {
     }
   }
 
+  function pressVideoFrame() {
+    setPressedVideo(true)
+    setTimeout(() => {
+      setPressedVideo(false)
+    }, 4000);
+  }
+
   return (
     <SafeAreaView>
       <StatusBar/>
       <View>
-        <YoutubePlayer
-          ref={playerRef}
-          height={youtubeHeight}
-          play={true}
-          videoId="lhr4Ax4C_-4"
-          // onChangeState={}
-        />
-        <View style={styles.overlay}>
+        <Pressable
+          onPress={pressVideoFrame}>
+          <YoutubePlayer
+            ref={playerRef}
+            height={youtubeHeight}
+            play={true}
+            videoId={videoId}
+            // onChangeState={}
+          />
+        </Pressable>
+        <View style={[styles.overlay, pressedVideo ? styles.overlayPress : styles.overlayNotPress]}>
           {
             currCaptions ?
             currCaptions.map((caption: any, index: any) => (
@@ -106,7 +120,9 @@ function App(): JSX.Element {
           {
             subtitles.length > 0 ?
             subtitles.map((subtitle: any, index: any) => (
-              <Text key={index}>{subtitle.text}</Text>
+              <View style={styles.captions}>
+                <Text style={styles.captionText} key={index}>{subtitle.text}</Text>
+              </View>
             ))
             : <Text>字幕を表示中です。</Text>
           }
@@ -126,16 +142,31 @@ const styles = StyleSheet.create({
     right: 0,
     justifyContent: 'center',
     alignItems: 'center',
-    bottom: '10%', // 画面下からの距離を調整
     backgroundColor: 'black',
     borderRadius: 5,
     opacity: 0.8,
+  },
+  overlayPress: {
+    bottom: '30%', // 画面下からの距離を調整
+  },
+  overlayNotPress: {
+    bottom: '10%', // 画面下からの距離を調整
   },
   overlayText: {
     fontSize: 18,
     fontWeight: 'bold',
     color: 'white',
-    margin: 3,
   },
+  captions: {
+    justifyContent: 'center',
+    paddingBottom: 20,
+    borderWidth: 1,
+    borderBottomColor: 'black',
+  },
+  captionText: {
+    flex:1,
+    fontSize: 18,
+    marginLeft: 5,
+  }
 });
 export default App;
