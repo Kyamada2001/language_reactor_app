@@ -29,9 +29,14 @@ import {
 const youtubeHeight = Dimensions.get('window').width / 16 * 9;
 
 function App(): JSX.Element {
+  const playerRef: any = useRef();
   const [subtitles, setSubtitles] = useState([]);
   const [videoId, setVideoId] = useState(String);
-  const [captionIndex, setCaptionIndex] = useState(Number)
+
+  const [captionIndex, setCaptionIndex] = useState(Number);
+  const [captions, setCaptions] = useState(Array<Object>)
+  // const [charCaption, setCharCaption] = useState(Array<Array<String>>) この機能の実装はまだ先
+  const [currentTime, setCurrentTime] = useState(Number);
 
   useEffect(() => {
     const fetchYoutubeSubtitles = async () => { 
@@ -49,23 +54,48 @@ function App(): JSX.Element {
     }
 
     fetchYoutubeSubtitles();
-  }, [])
+    const timer = setInterval(async () => {
+      const newTime: any = await playerRef.current?.getCurrentTime();
+      if (newTime !== currentTime) {
+        setCurrentTime(newTime);
+      }
+    }, 500); // 0.5秒ごとに監視
+  }, []); // 依存配列を空にする
+
+  useEffect(() => {
+    getCurrCaption();
+  }, [currentTime])
+
+  function getCurrCaption() {
+    if(subtitles.length > 0 && currentTime) {
+      const captions: any = subtitles.filter(function(subtitle: any) {
+        const startTime = parseFloat(subtitle.start);
+        const endTime = parseFloat(startTime + subtitle.duration);
+        console.log("endTime"+startTime)
+        console.log("currentTime" + currentTime)
+        console.log("endTime"+endTime)
+
+        return startTime <= currentTime && currentTime < endTime; 
+      })
+      setCaptions(captions);
+    }
+  }
 
   return (
     <SafeAreaView>
       <StatusBar/>
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-      >
-        <View>
-
-          <YoutubePlayer
+      <View>
+        <YoutubePlayer
+          ref={playerRef}
           height={youtubeHeight}
           play={true}
           videoId="lhr4Ax4C_-4"
           // onChangeState={}
-        />
-        </View>
+      />
+      </View>
+      <ScrollView
+        contentInsetAdjustmentBehavior="automatic"
+      >
         <View>
           {
             subtitles.length > 0 ?
