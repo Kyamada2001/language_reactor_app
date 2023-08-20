@@ -34,7 +34,7 @@ function App(): JSX.Element {
   const [videoId, setVideoId] = useState(String);
 
   const [captionIndex, setCaptionIndex] = useState(Number);
-  const [captions, setCaptions] = useState(Array<Object>)
+  const [currCaptions, setCurrCaptions] = useState(Array<Object>)
   // const [charCaption, setCharCaption] = useState(Array<Array<String>>) この機能の実装はまだ先
   const [currentTime, setCurrentTime] = useState(Number);
 
@@ -68,16 +68,13 @@ function App(): JSX.Element {
 
   function getCurrCaption() {
     if(subtitles.length > 0 && currentTime) {
-      const captions: any = subtitles.filter(function(subtitle: any) {
+      const currCaptions: any = subtitles.filter(function(subtitle: any) {
         const startTime = parseFloat(subtitle.start);
         const endTime = parseFloat(startTime + subtitle.duration);
-        console.log("endTime"+startTime)
-        console.log("currentTime" + currentTime)
-        console.log("endTime"+endTime)
 
         return startTime <= currentTime && currentTime < endTime; 
       })
-      setCaptions(captions);
+      setCurrCaptions(currCaptions);
     }
   }
 
@@ -91,7 +88,16 @@ function App(): JSX.Element {
           play={true}
           videoId="lhr4Ax4C_-4"
           // onChangeState={}
-      />
+        />
+        <View style={styles.overlay}>
+          {
+            currCaptions ?
+            currCaptions.map((caption: any, index: any) => (
+              <Text style={styles.overlayText} key={index}>{caption.text}</Text>
+            ))
+            : null
+          }
+        </View>
       </View>
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
@@ -109,5 +115,27 @@ function App(): JSX.Element {
     </SafeAreaView>
   );
 }
-
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    position: 'relative', // 必要に応じて調整
+  },
+  overlay: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    bottom: '10%', // 画面下からの距離を調整
+    backgroundColor: 'black',
+    borderRadius: 5,
+    opacity: 0.8,
+  },
+  overlayText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: 'white',
+    margin: 3,
+  },
+});
 export default App;
