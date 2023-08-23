@@ -6,8 +6,9 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Dimensions } from 'react-native';
+import { Dimensions, TouchableOpacity } from 'react-native';
 import YoutubePlayer from "react-native-youtube-iframe";
+import  WebView from "react-native-webview"
 import {
   SafeAreaView,
   ScrollView,
@@ -39,6 +40,8 @@ function App(): JSX.Element {
   // const [charCaption, setCharCaption] = useState(Array<Array<String>>) この機能の実装はまだ先
   const [currentTime, setCurrentTime] = useState(Number);
   const [pressedVideo, setPressedVideo] = useState(Boolean)
+  const [translateWord, setTranslateWord] = useState(null)
+  const [translateWordId, setTranslateWordId] = useState(null)
 
   useEffect(() => {
     const fetchYoutubeSubtitles = async () => { 
@@ -82,6 +85,16 @@ function App(): JSX.Element {
     }
   }
 
+  const pressVideoCaption = (captionId: any, caption: any) => {
+    if(!translateWordId || translateWordId != captionId){
+      setTranslateWord(caption)
+      setTranslateWordId(captionId)
+    } else if(captionId == translateWordId) {
+      setTranslateWord(null)
+      setTranslateWordId(null)
+    }
+  }
+
   function pressVideoFrame() {
     setPressedVideo(true)
     setTimeout(() => {
@@ -103,13 +116,29 @@ function App(): JSX.Element {
             // onChangeState={}
           />
         </Pressable>
+        {/* 字幕をクリックした際、(pressVideoCaptionクリック時)、WebViewで翻訳を表示する */}
+        {/* {translateWordId && translateWord ?  */}
+        {/* : null} */}
+
+        <View style={styles.translateVideoCaption}>
+           <TouchableOpacity>
+            <Text>WebView表示</Text>
+             <WebView 
+                style={styles.videoCaptionTranslateView} 
+                source={{uri:'https://dictionary.cambridge.org/ja/dictionary/english-japanese/study'}}
+                scalesPageToFit={true}
+                javaScriptEnabled={true}
+              />
+          </TouchableOpacity> 
+        </View>
         <View style={[styles.overlay, pressedVideo ? styles.overlayPress : styles.overlayNotPress]}>
           {
             currCaptions ?
             currCaptions.map((caption: any, index: any) => (
-              <Text style={styles.overlayText} key={index}>{caption.text}</Text>
-            ))
-            : null
+              <TouchableOpacity onPress={() => pressVideoCaption(index, caption.text)}>
+                <Text style={styles.overlayText} key={index}>{caption.text}</Text>
+              </TouchableOpacity>
+            )) : null
           }
         </View>
       </View>
@@ -167,6 +196,28 @@ const styles = StyleSheet.create({
     flex:1,
     fontSize: 18,
     marginLeft: 5,
-  }
+  },
+  translateVideoCaption: {
+    flex: 1,
+    // width: '85%',
+    height: 200,
+    top: '3%',
+    // bottom: '40%',
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'black',
+    borderRadius: 5,
+    opacity: 0.8,
+    borderBottomColor: 'black',
+    transform: [{ translateX: -50 }, { translateY: -50 }],
+  },
+  videoCaptionTranslateView: {
+    flex: 1,
+    zIndex: 100,
+    // width: '100%'
+  },
 });
 export default App;
