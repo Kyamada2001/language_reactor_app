@@ -45,30 +45,11 @@ function App(): JSX.Element {
   // const [charCaption, setCharCaption] = useState(Array<Array<String>>) この機能の実装はまだ先
   const [currentTime, setCurrentTime] = useState<number | null>(null);
   const [pressedVideo, setPressedVideo] = useState(Boolean)
+
   const [sourceVideoCaption, setSourceVideoCaption] = useState<string | null>("environment") // ビデオ字幕の翻訳対象文字
   const [sourceVideoCaptionId, setSourceVideoCaptionId] = useState(null) // ビデオ字幕の翻訳
   const [videoCaptionInfo, setVideoCaptionInfo] = useState("")
-
-
-  type GoogleTranslateReq = {
-    text: string, // 翻訳対象のテキスト
-    source: string, // 翻訳前の言語 （例:en）
-    target: string, // 翻訳後の言語 （例:ja）
-  }
-
-  type ExelApiTranslateReq = {
-    word: string,
-  }
-
-  // type VideoCaptionInfo = {
-  //   "Lemma": string,
-  //   "Rank": string | number,
-  //   "Frequency": string | number,
-  //   "Japanese": string,
-  //   "Commentary": string,
-  //   "cf": string | number | null,
-  //   "Ctgory": string | number | null
-  // } | null
+  const [translatedCaption, setTranslatedCaption] = useState("")
 
   useEffect(() => {
     console.log("デバッガー発火")
@@ -118,13 +99,47 @@ function App(): JSX.Element {
     setSourceVideoCaptionId(null)
   }
 
-  // const translateText: any = (text: string) => {
-  //   const matchedData: any = translateJsonData.find((item: any) =>{
-  //     item.Lemma == text
-  //   })
-  //   console.log
-  //   return matchedData || null;
-  // }
+  const textDictional = async (text: string) => {
+    const url = "https://api.excelapi.org/dictionary/enja?word=pretty"
+
+    const response = await axios.get(url)
+    .then((res: any) => {
+      const stringJson: any = JSON.stringify(res.data)
+      return stringJson
+      // setVideoCaptionInfo(stringJson)
+    })
+    return response
+  }
+
+  const translate = async (text: string) => {
+    const url = "https://mt-auto-minhon-mlt.ucri.jgn-x.jp"
+    const key = "19c61daea69c34114464b373d74f2928064e94fd6"
+    const secret = "62c50964289e1e289de36c243098641d"
+    const name = "kyamada2001"
+    const api_name = "mt"
+    const api_param = "generalNT_en_ja"
+
+    // oauthが必要になったらコメント解除
+    // const getClientCredentials =  oauth.clientCredentials(
+    //   axios.create(),
+    //   url + '/oauth2/token.php',
+    //   key,
+    //   secret,
+    // );
+    // const auth: any = await getClientCredentials
+
+    const response = await axios.post(`${url}/api/?access_token=null&key=${key}&api_name=${api_name}&api_param=${api_param}&name=${name}&type=json&text=${text}`)
+    .then((res: any) => {
+      const text = res.data.resultset.result.text
+      const convertedText = text.replace(/;/g, "\n").replace(/"/g, "");
+      return convertedText;
+      // setVideoCaptionInfo(res.data.resultset.result.text)
+    }).catch((err) => {
+      const stringJson: any = JSON.stringify(err)
+      // setVideoCaptionInfo(stringJson)
+    })
+    return response;
+  }
 
   const pressVideoCaption = async (captionId: any, caption: string) => {
     if (captionId == sourceVideoCaptionId) {
@@ -132,31 +147,12 @@ function App(): JSX.Element {
     } else {
       setSourceVideoCaption("caption")
       setSourceVideoCaptionId(captionId)
+      
+      const dictionaryText: any = await textDictional("Hello")
+      const translated = await translate(caption);
 
-      const url = "https://mt-auto-minhon-mlt.ucri.jgn-x.jp"
-      const key = "19c61daea69c34114464b373d74f2928064e94fd6"
-      const secret = "62c50964289e1e289de36c243098641d"
-      const name = "kyamada2001"
-      const api_name = "mt"
-      const api_param = "generalNT_en_ja"
-
-
-      // const getClientCredentials =  oauth.clientCredentials(
-      //   axios.create(),
-      //   url + '/oauth2/token.php',
-      //   key,
-      //   secret,
-      // );
-
-      // const auth: any = await getClientCredentials
-
-      await axios.post(`${url}/api/?access_token=null&key=${key}&api_name=${api_name}&api_param=${api_param}&name=${name}&type=json&text=pretty`)
-      .then((res: any) => {
-        setVideoCaptionInfo(res.data.resultset.result.text)
-      }).catch((err) => {
-        const stringJson: any = JSON.stringify(err)
-        setVideoCaptionInfo(stringJson)
-      })
+      setVideoCaptionInfo(dictionaryText)
+      setTranslatedCaption(translated)
     }
   }
 
@@ -172,9 +168,13 @@ function App(): JSX.Element {
   const VideoCaptionInfo = () => {
     return (
       <View style={styles.translateVideoCaption}>
-        <View>
-        <View><Text>翻訳表示</Text></View>
-        <Text style={styles.overlayText}>{videoCaptionInfo}</Text>
+        <View style={styles.overlayHead}>
+          <Text style={styles.originalWord}>{sourceVideoCaption}</Text>
+          <Text style={styles.dictionaryInfo}>{videoCaptionInfo}</Text>
+        </View>
+        <View style={styles.overlayBody}>
+          <Text style={styles.originalWord}>現在のテキスト</Text>
+          <Text style={styles.originalWord}>{translatedCaption}</Text>
         </View>
       </View>
     )
@@ -268,11 +268,12 @@ const styles = StyleSheet.create({
     fontSize: 18,
     marginLeft: 5,
   },
+  // Video字幕翻訳
   translateVideoCaption: {
     flex: 1,
     // width: '85%',
     height: '50%',
-    top: '3%',
+    top: '7%',
     // bottom: '40%',
     position: 'absolute',
     left: 0,
@@ -281,9 +282,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: 'black',
     borderRadius: 5,
-    opacity: 0.8,
     borderBottomColor: 'black',
     // transform: [{ translateX: -50 }, { translateY: -50 }],
+  },
+  overlayHead: {
+    backgroundColor: 'dodgerblue',
+    width: '100%',
+  },
+  overlayBody: {
+    backgroundColor: 'rebeccapurple',
+    width: '100%',
+  },
+  originalWord: {
+    fontSize: 17,
+    fontWeight: 'bold',
+    color: 'gold',
+  },
+  dictionaryInfo: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: 'white',
   },
   videoCaptionTranslateView: {
     flex: 1,
