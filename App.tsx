@@ -5,10 +5,12 @@
  * @format
  */
 
-import React, { useState, useEffect, useRef } from 'react';
-import { Dimensions, TouchableOpacity } from 'react-native';
+import { useState, useEffect, useRef } from 'react';
+import { Button, Dimensions, TouchableOpacity } from 'react-native';
 import YoutubePlayer from "react-native-youtube-iframe";
 import  WebView from "react-native-webview"
+import Modal from "react-native-modal";
+import * as Animatable from 'react-native-animatable';
 import {
   SafeAreaView,
   ScrollView,
@@ -17,7 +19,7 @@ import {
   Text,
   useColorScheme,
   View,
-  Pressable
+  Pressable,
 } from 'react-native';
 
 import {
@@ -31,7 +33,6 @@ import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
 import oauth from 'axios-oauth-client'
 
 const youtubeHeight = Dimensions.get('window').width / 16 * 9;
-const translateJsonData = require('./assets/language/en_to_ja.json')
 
 function App(): JSX.Element {
   const playerRef: any = useRef();
@@ -45,14 +46,15 @@ function App(): JSX.Element {
   // const [charCaption, setCharCaption] = useState(Array<Array<String>>) この機能の実装はまだ先
   const [currentTime, setCurrentTime] = useState<number | null>(null);
   const [pressedVideo, setPressedVideo] = useState(Boolean)
+  const [videoPlaying, setVideoPlaying] = useState<boolean>(true)
 
   const [sourceVideoCaption, setSourceVideoCaption] = useState<string | null>("environment") // ビデオ字幕の翻訳対象文字
   const [sourceVideoCaptionId, setSourceVideoCaptionId] = useState(null) // ビデオ字幕の翻訳
   const [videoCaptionInfo, setVideoCaptionInfo] = useState("")
+  const [viewModal, setViewModal] = useState(false)
   const [translatedCaption, setTranslatedCaption] = useState("")
 
   useEffect(() => {
-    console.log("デバッガー発火")
     const fetchYoutubeSubtitles = async () => { 
       const response = await fetch('http://localhost:9000/2015-03-31/functions/function/invocations', {
         method: 'POST',
@@ -119,7 +121,7 @@ function App(): JSX.Element {
     const api_name = "mt"
     const api_param = "generalNT_en_ja"
 
-    // oauthが必要になったらコメント解除
+    // みんなの翻訳APIにてoauthが必要になったらコメント解除
     // const getClientCredentials =  oauth.clientCredentials(
     //   axios.create(),
     //   url + '/oauth2/token.php',
@@ -141,19 +143,18 @@ function App(): JSX.Element {
     return response;
   }
 
-  const pressVideoCaption = async (captionId: any, caption: string) => {
-    if (captionId == sourceVideoCaptionId) {
-      hiddenTranslate();
-    } else {
-      setSourceVideoCaption("caption")
-      setSourceVideoCaptionId(captionId)
-      
-      const dictionaryText: any = await textDictional("Hello")
-      const translated = await translate(caption);
+  const pressVideoCaption =  async  (captionId: any, caption: any) => {
+    setSourceVideoCaption("caption")
+    setSourceVideoCaptionId(captionId)
+    setVideoPlaying(false)
+    setViewModal(true)
+    
+    const dictionaryText: any = await textDictional("Hello")
+    const translated = await translate(caption);
 
-      setVideoCaptionInfo(dictionaryText)
-      setTranslatedCaption(translated)
-    }
+    setVideoCaptionInfo(dictionaryText)
+    setTranslatedCaption(translated)
+    return ;
   }
 
 
@@ -167,15 +168,19 @@ function App(): JSX.Element {
 
   const VideoCaptionInfo = () => {
     return (
-      <View style={styles.translateVideoCaption}>
-        <View style={styles.overlayHead}>
-          <Text style={styles.originalWord}>{sourceVideoCaption}</Text>
-          <Text style={styles.dictionaryInfo}>{videoCaptionInfo}</Text>
+      <View>
+      <Modal isVisible={viewModal}>
+        <View>
+          <View style={styles.overlayHead}>
+            <Text style={styles.originalWord}>{sourceVideoCaption}</Text>
+            <Text style={styles.dictionaryInfo}>{videoCaptionInfo}</Text>
+          </View>
+          <View style={styles.overlayBody}>
+            <Text style={styles.originalWord}>現在のテキスト</Text>
+            <Text style={styles.originalWord}>{translatedCaption}</Text>
+          </View>
         </View>
-        <View style={styles.overlayBody}>
-          <Text style={styles.originalWord}>現在のテキスト</Text>
-          <Text style={styles.originalWord}>{translatedCaption}</Text>
-        </View>
+      </Modal>
       </View>
     )
   }
@@ -183,24 +188,19 @@ function App(): JSX.Element {
   return (
     <SafeAreaView>
       <StatusBar/>
+        {/* 字幕をクリックした際、(pressVideoCaption発火時)、WebViewで翻訳を表示する */}
+        <VideoCaptionInfo/>
       <View>
         <Pressable
           onPress={pressVideoFrame}>
           <YoutubePlayer
             ref={playerRef}
             height={youtubeHeight}
-            play={true}
+            play={videoPlaying}
             videoId={videoId}
             // onChangeState={}
           />
         </Pressable>
-        {/* 字幕をクリックした際、(pressVideoCaption発火時)、WebViewで翻訳を表示する */}
-        {
-          videoCaptionInfo ?
-          <VideoCaptionInfo/>
-          : null
-        }
-
         <View style={[styles.overlay, pressedVideo ? styles.overlayPress : styles.overlayNotPress]}>
           {
             currCaptions ?
@@ -215,6 +215,11 @@ function App(): JSX.Element {
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
       >
+        {
+          viewModal ?
+          <Text>True</Text>
+          : <Text>False</Text>
+        }
         <View>
           {
             subtitles.length > 0 ?
