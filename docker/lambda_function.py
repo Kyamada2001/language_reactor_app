@@ -4,11 +4,20 @@ from youtube_transcript_api import YouTubeTranscriptApi
 def lambda_handler(event, context):
     videoId = event['videoId']
     transcript_list = YouTubeTranscriptApi.list_transcripts(videoId)
-    response = []
+    caption = []
+    translate = []
     for transcript in transcript_list:
-        response.append(transcript.fetch())
+        caption.append(transcript.fetch())
+        translate.append(transcript.translate('ja').fetch())
 
+    # response = {
+    #     "caption": json.dumps(caption),
+    #     "translate_caption": json.dumps(translate)
+    # }
     return {
         "statusCode": 200,
-        "body": json.dumps(response)
+        "body": json.dumps({
+            "caption": json.dumps(caption),
+            "translate_caption": json.dumps(translate)
+        })
     }

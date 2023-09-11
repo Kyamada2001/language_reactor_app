@@ -36,22 +36,31 @@ const youtubeHeight = Dimensions.get('window').width / 16 * 9;
 
 function App(): JSX.Element {
   const playerRef: any = useRef();
-  const [subtitles, setSubtitles] = useState([]);
-  const [videoId, setVideoId] = useState("lhr4Ax4C_-4");
-  // TODO: URL系は環境変数で管理する。
-  const [googleTranslateUrl, setGoogleTranslateUrl] = useState("https://script.google.com/macros/s/AKfycbyNX-jodYhhZESYMQ9hzDxtzRgs_y4nWgGGFGNB1A8rR_Y9Kn1w1djVZtv1pGKAvA4f/exec")
+  //ステータス関係
+  const [videoId, setVideoId] = useState("lhr4Ax4C_-4"); //youtubeのvideoId
+  const [videoPlaying, setVideoPlaying] = useState<boolean>(true) // ビデオ開始停止
+  const [viewModal, setViewModal] = useState(false) //モーダル開閉
 
+  //字幕関係
+  const [subtitles, setSubtitles] = useState([]);
   const [captionIndex, setCaptionIndex] = useState<number | null>(null); // 字幕全体に対する配列のIndex
   const [currCaptions, setCurrCaptions] = useState(Array<Object>) // 現在再生している字幕情報
-  // const [charCaption, setCharCaption] = useState(Array<Array<String>>) この機能の実装はまだ先
   const [currentTime, setCurrentTime] = useState<number | null>(null);
-  const [pressedVideo, setPressedVideo] = useState(Boolean)
-  const [videoPlaying, setVideoPlaying] = useState<boolean>(true)
+  const [pressedVideo, setPressedVideo] = useState<boolean>(false)
 
+  //モーダル関係内容
   const [sourceVideoCaption, setSourceVideoCaption] = useState<string | null>("environment") // ビデオ字幕の翻訳対象文字
   const [sourceVideoCaptionId, setSourceVideoCaptionId] = useState(null) // ビデオ字幕の翻訳
   const [videoCaptionInfo, setVideoCaptionInfo] = useState("")
-  const [viewModal, setViewModal] = useState(false)
+  
+  
+  // TODO: URL系は環境変数で管理する。
+  const [googleTranslateUrl, setGoogleTranslateUrl] = useState("https://script.google.com/macros/s/AKfycbyNX-jodYhhZESYMQ9hzDxtzRgs_y4nWgGGFGNB1A8rR_Y9Kn1w1djVZtv1pGKAvA4f/exec")
+
+  
+  
+  // const [charCaption, setCharCaption] = useState(Array<Array<String>>) この機能の実装はまだ先
+  
   const [translatedCaption, setTranslatedCaption] = useState("")
 
   useEffect(() => {
@@ -68,7 +77,7 @@ function App(): JSX.Element {
       const subtitles = await response.json().then((data) => {
         return JSON.parse(data.body);
       });
-      setSubtitles(subtitles[0]);
+      setSubtitles(subtitles);
     }
 
     fetchYoutubeSubtitles();
@@ -81,7 +90,7 @@ function App(): JSX.Element {
   }, []); // 依存配列を空にする
 
   useEffect(() => {
-    getCurrCaption();
+    if(!viewModal) getCurrCaption();
   }, [currentTime])
 
   function getCurrCaption() {
@@ -97,23 +106,25 @@ function App(): JSX.Element {
   }
 
   const hiddenTranslate = () => {
-    setSourceVideoCaption(null)
-    setSourceVideoCaptionId(null)
+    setSourceVideoCaption("")
+    // setSourceVideoCaptionId(null)
+    setViewModal(false)
+    setVideoPlaying(true)
   }
 
   const textDictional = async (text: string) => {
     const url = "https://api.excelapi.org/dictionary/enja?word=pretty"
 
-    const response = await axios.get(url)
+    const response = axios.get(url)
     .then((res: any) => {
       const stringJson: any = JSON.stringify(res.data)
-      return stringJson
-      // setVideoCaptionInfo(stringJson)
+      // return stringJson
+      setVideoCaptionInfo(stringJson)
     })
     return response
   }
 
-  const translate = async (text: string) => {
+  const translate = (text: string) => {
     const url = "https://mt-auto-minhon-mlt.ucri.jgn-x.jp"
     const key = "19c61daea69c34114464b373d74f2928064e94fd6"
     const secret = "62c50964289e1e289de36c243098641d"
@@ -130,12 +141,11 @@ function App(): JSX.Element {
     // );
     // const auth: any = await getClientCredentials
 
-    const response = await axios.post(`${url}/api/?access_token=null&key=${key}&api_name=${api_name}&api_param=${api_param}&name=${name}&type=json&text=${text}`)
+    const response = axios.post(`${url}/api/?access_token=null&key=${key}&api_name=${api_name}&api_param=${api_param}&name=${name}&type=json&text=${text}`)
     .then((res: any) => {
       const text = res.data.resultset.result.text
       const convertedText = text.replace(/;/g, "\n").replace(/"/g, "");
-      return convertedText;
-      // setVideoCaptionInfo(res.data.resultset.result.text)
+      setTranslatedCaption(convertedText)
     }).catch((err) => {
       const stringJson: any = JSON.stringify(err)
       // setVideoCaptionInfo(stringJson)
@@ -143,18 +153,13 @@ function App(): JSX.Element {
     return response;
   }
 
-  const pressVideoCaption =  async  (captionId: any, caption: any) => {
+  const pressVideoCaption = (captionId: any, caption: any) => {
+    setViewModal(true)
     setSourceVideoCaption("caption")
     setSourceVideoCaptionId(captionId)
     setVideoPlaying(false)
-    setViewModal(true)
-    
-    const dictionaryText: any = await textDictional("Hello")
-    const translated = await translate(caption);
-
-    setVideoCaptionInfo(dictionaryText)
-    setTranslatedCaption(translated)
-    return ;
+    textDictional("Hello") //.then((dictionaryText) => setVideoCaptionInfo(dictionaryText))
+    translate(caption) //.then((translated) => setTranslatedCaption(translated));
   }
 
 
@@ -169,18 +174,19 @@ function App(): JSX.Element {
   const VideoCaptionInfo = () => {
     return (
       <View>
-      <Modal isVisible={viewModal}>
-        <View>
-          <View style={styles.overlayHead}>
-            <Text style={styles.originalWord}>{sourceVideoCaption}</Text>
-            <Text style={styles.dictionaryInfo}>{videoCaptionInfo}</Text>
+        <Modal isVisible={viewModal}>
+          <Button title="close" onPress={hiddenTranslate}/>
+          <View>
+            <View style={styles.overlayHead}>
+              <Text style={styles.originalWord}>{sourceVideoCaption}</Text>
+              <Text style={styles.dictionaryInfo}>{videoCaptionInfo ? videoCaptionInfo : ''}</Text>
+            </View>
+            <View style={styles.overlayBody}>
+              <Text style={styles.originalWord}>現在のテキスト</Text>
+              <Text style={styles.originalWord}>{translatedCaption ? translatedCaption : ''}</Text>
+            </View>
           </View>
-          <View style={styles.overlayBody}>
-            <Text style={styles.originalWord}>現在のテキスト</Text>
-            <Text style={styles.originalWord}>{translatedCaption}</Text>
-          </View>
-        </View>
-      </Modal>
+        </Modal>
       </View>
     )
   }
@@ -215,6 +221,7 @@ function App(): JSX.Element {
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
       >
+        <Text>{JSON.stringify(subtitles)}</Text>
         {
           viewModal ?
           <Text>True</Text>
