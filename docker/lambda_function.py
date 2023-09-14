@@ -13,11 +13,11 @@ def lambda_handler(event, context):
     # response = {
     #     "caption": json.dumps(caption),
     #     "translate_caption": json.dumps(translate)
-    # }
+    # 
     return {
         "statusCode": 200,
         "body": json.dumps({
-            "caption": json.dumps(caption),
-            "translate_caption": json.dumps(translate)
+            "caption": json.dumps(caption[0]),
+            "translate_caption": json.dumps(translate[0])
         })
     }

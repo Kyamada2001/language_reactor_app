@@ -31,10 +31,25 @@ import {
 } from 'react-native/Libraries/NewAppScreen';
 import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
 import oauth from 'axios-oauth-client'
+import { Float } from 'react-native/Libraries/Types/CodegenTypes';
 
 const youtubeHeight = Dimensions.get('window').width / 16 * 9;
 
 function App(): JSX.Element {
+  type YoutubeResponse = {
+    caption: {
+
+    },
+    translate_caption: {
+
+    }
+  }
+  type YoutubeCaption = {
+    start:string,
+    end: string,
+    duration: string,
+    text: string
+  }
   const playerRef: any = useRef();
   //ステータス関係
   const [videoId, setVideoId] = useState("lhr4Ax4C_-4"); //youtubeのvideoId
@@ -42,15 +57,17 @@ function App(): JSX.Element {
   const [viewModal, setViewModal] = useState(false) //モーダル開閉
 
   //字幕関係
-  const [subtitles, setSubtitles] = useState([]);
-  const [captionIndex, setCaptionIndex] = useState<number | null>(null); // 字幕全体に対する配列のIndex
+  const [captions, setCaptions] = useState<any>([]);
+  const [translatedCaptions, setTranslatedCaptions] = useState([])
+  const [currCaptionIndex, setCurrCaptionIndex] = useState<number | null>(null); // 字幕全体に対する配列のIndex
   const [currCaptions, setCurrCaptions] = useState(Array<Object>) // 現在再生している字幕情報
   const [currentTime, setCurrentTime] = useState<number | null>(null);
   const [pressedVideo, setPressedVideo] = useState<boolean>(false)
 
   //モーダル関係内容
-  const [sourceVideoCaption, setSourceVideoCaption] = useState<string | null>("environment") // ビデオ字幕の翻訳対象文字
-  const [sourceVideoCaptionId, setSourceVideoCaptionId] = useState(null) // ビデオ字幕の翻訳
+  const [translatedCaption, setTranslatedCaption] = useState<any>();
+  const [sourceText, setSourceText] = useState<string | null>("environment") // ビデオ字幕の翻訳対象文字
+  const [sourceTextId, setSourceTextId] = useState(null) // ビデオ字幕の翻訳
   const [videoCaptionInfo, setVideoCaptionInfo] = useState("")
   
   
@@ -60,11 +77,9 @@ function App(): JSX.Element {
   
   
   // const [charCaption, setCharCaption] = useState(Array<Array<String>>) この機能の実装はまだ先
-  
-  const [translatedCaption, setTranslatedCaption] = useState("")
 
   useEffect(() => {
-    const fetchYoutubeSubtitles = async () => { 
+    const fetchYoutubecaptions = async () => { 
       const response = await fetch('http://localhost:9000/2015-03-31/functions/function/invocations', {
         method: 'POST',
         headers: {
@@ -74,13 +89,14 @@ function App(): JSX.Element {
           videoId: videoId
         }),
       });
-      const subtitles = await response.json().then((data) => {
+      const data = await response.json().then((data) => {
         return JSON.parse(data.body);
       });
-      setSubtitles(subtitles);
+      setCaptions(JSON.parse(data.caption));
+      setTranslatedCaptions(JSON.parse(data.translate_caption))
     }
 
-    fetchYoutubeSubtitles();
+    fetchYoutubecaptions();
     const timer = setInterval(async () => {
       const newTime: any = await playerRef.current?.getCurrentTime();
       if (newTime !== currentTime) {
@@ -94,20 +110,21 @@ function App(): JSX.Element {
   }, [currentTime])
 
   function getCurrCaption() {
-    if(subtitles.length > 0 && currentTime) {
-      const currCaptions: any = subtitles.filter(function(subtitle: any) {
-        const startTime = parseFloat(subtitle.start);
-        const endTime = parseFloat(startTime + subtitle.duration);
+    if(captions.length > 0 && currentTime) {
+      const currCaptions: any = captions.filter(function(caption: any) {
+        const startTime = parseFloat(caption.start);
+        const endTime = parseFloat(startTime + caption.duration);
 
-        return startTime <= currentTime && currentTime < endTime; 
+        return startTime <= currentTime && currentTime < endTime;
       })
       setCurrCaptions(currCaptions);
+      // setCurrCaptionIndex(currCaptions.index);
     }
   }
 
   const hiddenTranslate = () => {
-    setSourceVideoCaption("")
-    // setSourceVideoCaptionId(null)
+    setSourceText("")
+    // setsourceTextId(null)
     setViewModal(false)
     setVideoPlaying(true)
   }
@@ -125,41 +142,61 @@ function App(): JSX.Element {
   }
 
   const translate = (text: string) => {
-    const url = "https://mt-auto-minhon-mlt.ucri.jgn-x.jp"
-    const key = "19c61daea69c34114464b373d74f2928064e94fd6"
-    const secret = "62c50964289e1e289de36c243098641d"
-    const name = "kyamada2001"
-    const api_name = "mt"
-    const api_param = "generalNT_en_ja"
+    // Youtubeの自動翻訳を使えるので不要に
+    // const url = "https://mt-auto-minhon-mlt.ucri.jgn-x.jp"
+    // const key = "19c61daea69c34114464b373d74f2928064e94fd6"
+    // const secret = "62c50964289e1e289de36c243098641d"
+    // const name = "kyamada2001"
+    // const api_name = "mt"
+    // const api_param = "generalNT_en_ja"
 
-    // みんなの翻訳APIにてoauthが必要になったらコメント解除
-    // const getClientCredentials =  oauth.clientCredentials(
-    //   axios.create(),
-    //   url + '/oauth2/token.php',
-    //   key,
-    //   secret,
-    // );
-    // const auth: any = await getClientCredentials
+    // // みんなの翻訳APIにてoauthが必要になったらコメント解除
+    // // const getClientCredentials =  oauth.clientCredentials(
+    // //   axios.create(),
+    // //   url + '/oauth2/token.php',
+    // //   key,
+    // //   secret,
+    // // );
+    // // const auth: any = await getClientCredentials
 
-    const response = axios.post(`${url}/api/?access_token=null&key=${key}&api_name=${api_name}&api_param=${api_param}&name=${name}&type=json&text=${text}`)
-    .then((res: any) => {
-      const text = res.data.resultset.result.text
-      const convertedText = text.replace(/;/g, "\n").replace(/"/g, "");
-      setTranslatedCaption(convertedText)
-    }).catch((err) => {
-      const stringJson: any = JSON.stringify(err)
-      // setVideoCaptionInfo(stringJson)
+    // const response = axios.post(`${url}/api/?access_token=null&key=${key}&api_name=${api_name}&api_param=${api_param}&name=${name}&type=json&text=${text}`)
+    // .then((res: any) => {
+    //   const text = res.data.resultset.result.text
+    //   const convertedText = text.replace(/;/g, "\n").replace(/"/g, "");
+    //   setTranslatedCaption(convertedText)
+    // }).catch((err) => {
+    //   const stringJson: any = JSON.stringify(err)
+    //   // setVideoCaptionInfo(stringJson)
+    // })
+    // return response;
+  }
+
+  const getCurrTranslateCaption = (subtitle: any) => {
+    const startTime = subtitle.start;
+    const duration = subtitle.duration;
+
+    const translated: any = translatedCaptions.filter(function(element: any) {
+      return startTime == element.start && duration == element.duration
     })
-    return response;
+    setTranslatedCaption(translated[0]);
   }
 
   const pressVideoCaption = (captionId: any, caption: any) => {
-    setViewModal(true)
-    setSourceVideoCaption("caption")
-    setSourceVideoCaptionId(captionId)
-    setVideoPlaying(false)
-    textDictional("Hello") //.then((dictionaryText) => setVideoCaptionInfo(dictionaryText))
-    translate(caption) //.then((translated) => setTranslatedCaption(translated));
+    // text指定する際、caption.textと指定する必要がある。
+    // new Promise(function(resolve, reject){
+      setSourceText("caption")
+      // setSourceTextId(captionId)
+      textDictional("Hello") //.then((dictionaryText) => setVideoCaptionInfo(dictionaryText))
+      getCurrTranslateCaption(caption)
+      setVideoPlaying(false)
+      setViewModal(true)
+      // resolve(null)
+    // }).then(() => {
+    //   // 全ての処理が終わってからモーダル表示する
+    //   setViewModal(true)
+    // })
+    
+    // TODO: 時間で、currCaptionとあう要素を検索し、翻訳を取得する
   }
 
 
@@ -178,12 +215,12 @@ function App(): JSX.Element {
           <Button title="close" onPress={hiddenTranslate}/>
           <View>
             <View style={styles.overlayHead}>
-              <Text style={styles.originalWord}>{sourceVideoCaption}</Text>
+              <Text style={styles.originalWord}>{sourceText}</Text>
               <Text style={styles.dictionaryInfo}>{videoCaptionInfo ? videoCaptionInfo : ''}</Text>
             </View>
             <View style={styles.overlayBody}>
-              <Text style={styles.originalWord}>現在のテキスト</Text>
-              <Text style={styles.originalWord}>{translatedCaption ? translatedCaption : ''}</Text>
+              <Text style={styles.originalWord}>現在の字幕</Text>
+              <Text style={styles.originalWord}>{translatedCaption ? translatedCaption.text : ''}</Text>
             </View>
           </View>
         </Modal>
@@ -211,7 +248,7 @@ function App(): JSX.Element {
           {
             currCaptions ?
             currCaptions.map((caption: any, index: any) => (
-              <TouchableOpacity onPress={() => pressVideoCaption(index, caption.text)}>
+              <TouchableOpacity onPress={() => pressVideoCaption(index, caption)}>
                 <Text style={styles.overlayText} key={index}>{caption.text}</Text>
               </TouchableOpacity>
             )) : null
@@ -221,16 +258,10 @@ function App(): JSX.Element {
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
       >
-        <Text>{JSON.stringify(subtitles)}</Text>
-        {
-          viewModal ?
-          <Text>True</Text>
-          : <Text>False</Text>
-        }
         <View>
           {
-            subtitles.length > 0 ?
-            subtitles.map((subtitle: any, index: any) => (
+            captions.length > 0 ?
+            captions.map((subtitle: any, index: any) => (
               <View style={styles.captions}>
                 <Text style={styles.captionText} key={index}>{subtitle.text}</Text>
               </View>
