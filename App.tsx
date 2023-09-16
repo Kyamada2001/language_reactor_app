@@ -20,6 +20,7 @@ import {
   useColorScheme,
   View,
   Pressable,
+  TouchableWithoutFeedback,
 } from 'react-native';
 
 import {
@@ -58,6 +59,7 @@ function App(): JSX.Element {
 
   //字幕関係
   const [captions, setCaptions] = useState<any>([]);
+  const [captionTexts, setCaptionTexts] = useState([])
   const [translatedCaptions, setTranslatedCaptions] = useState([])
   const [currCaptionIndex, setCurrCaptionIndex] = useState<number | null>(null); // 字幕全体に対する配列のIndex
   const [currCaptions, setCurrCaptions] = useState(Array<Object>) // 現在再生している字幕情報
@@ -109,16 +111,26 @@ function App(): JSX.Element {
     if(!viewModal) getCurrCaption();
   }, [currentTime])
 
+  function splitCaptionText(subtitles: any) {
+    const splitTexts = subtitles.map(function(subtitle: any) {
+      const texts = subtitle.text.split(" ");
+      return texts;
+    })
+    setCaptionTexts(splitTexts)
+  }
   function getCurrCaption() {
     if(captions.length > 0 && currentTime) {
-      const currCaptions: any = captions.filter(function(caption: any) {
+      const fetchedCurrCaptions: any = captions.filter(function(caption: any) {
         const startTime = parseFloat(caption.start);
         const endTime = parseFloat(startTime + caption.duration);
 
         return startTime <= currentTime && currentTime < endTime;
       })
-      setCurrCaptions(currCaptions);
+      setCurrCaptions(fetchedCurrCaptions);
       // setCurrCaptionIndex(currCaptions.index);
+      if(fetchedCurrCaptions){
+        splitCaptionText(fetchedCurrCaptions)
+      }
     }
   }
 
@@ -171,9 +183,10 @@ function App(): JSX.Element {
     // return response;
   }
 
-  const getCurrTranslateCaption = (subtitle: any) => {
-    const startTime = subtitle.start;
-    const duration = subtitle.duration;
+  const getCurrTranslateCaption = (currCaptionIndex: any) => {
+    const sourceCaption: any = currCaptions[currCaptionIndex];
+    const startTime = sourceCaption.start;
+    const duration = sourceCaption.duration;
 
     const translated: any = translatedCaptions.filter(function(element: any) {
       return startTime == element.start && duration == element.duration
@@ -181,13 +194,13 @@ function App(): JSX.Element {
     setTranslatedCaption(translated[0]);
   }
 
-  const pressVideoCaption = (captionId: any, caption: any) => {
+  const pressVideoCaption = async (currCaptionIndex: any, caption: any) => {
     // text指定する際、caption.textと指定する必要がある。
     // new Promise(function(resolve, reject){
       setSourceText("caption")
       // setSourceTextId(captionId)
-      textDictional("Hello") //.then((dictionaryText) => setVideoCaptionInfo(dictionaryText))
-      getCurrTranslateCaption(caption)
+      await textDictional("Hello") //.then((dictionaryText) => setVideoCaptionInfo(dictionaryText))
+      getCurrTranslateCaption(currCaptionIndex) // 表示されている字幕のIndexを渡し、字幕をセットする
       setVideoPlaying(false)
       setViewModal(true)
       // resolve(null)
@@ -209,6 +222,7 @@ function App(): JSX.Element {
   
 
   const VideoCaptionInfo = () => {
+    if(!viewModal) return; 
     return (
       <View>
         <Modal isVisible={viewModal}>
@@ -222,6 +236,9 @@ function App(): JSX.Element {
               <Text style={styles.originalWord}>現在の字幕</Text>
               <Text style={styles.originalWord}>{translatedCaption ? translatedCaption.text : ''}</Text>
             </View>
+            <View>
+              <Text>{JSON.stringify(captionTexts ?? '')}</Text>
+            </View>
           </View>
         </Modal>
       </View>
@@ -232,7 +249,7 @@ function App(): JSX.Element {
     <SafeAreaView>
       <StatusBar/>
         {/* 字幕をクリックした際、(pressVideoCaption発火時)、WebViewで翻訳を表示する */}
-        <VideoCaptionInfo/>
+      <VideoCaptionInfo/>
       <View>
         <Pressable
           onPress={pressVideoFrame}>
@@ -247,10 +264,20 @@ function App(): JSX.Element {
         <View style={[styles.overlay, pressedVideo ? styles.overlayPress : styles.overlayNotPress]}>
           {
             currCaptions ?
-            currCaptions.map((caption: any, index: any) => (
-              <TouchableOpacity onPress={() => pressVideoCaption(index, caption)}>
-                <Text style={styles.overlayText} key={index}>{caption.text}</Text>
-              </TouchableOpacity>
+            captionTexts.map((texts: any, currCaptionIndex: any) => (
+              <>
+              <View style={styles.captionContainer}>
+                {
+                  texts.map((text: any, index: any) => {
+                    return (
+                      <TouchableOpacity onPress={() => pressVideoCaption(currCaptionIndex, text)}>
+                        <Text style={styles.overlayText} key={index}>{text}</Text>
+                      </TouchableOpacity>
+                    )
+                  })
+                }
+              </View>
+              </>
             )) : null
           }
         </View>
@@ -258,6 +285,7 @@ function App(): JSX.Element {
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
       >
+        <Text>{JSON.stringify(currCaptions)}</Text>
         <View>
           {
             captions.length > 0 ?
@@ -298,6 +326,10 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: 'white',
+    marginRight: 4,
+  },
+  captionContainer: {
+    flexDirection: 'row'
   },
   captions: {
     justifyContent: 'center',
@@ -351,5 +383,8 @@ const styles = StyleSheet.create({
     zIndex: 100,
     // width: '100%'
   },
+  zIndex100: {
+    zIndex: 100,
+  }
 });
 export default App;
