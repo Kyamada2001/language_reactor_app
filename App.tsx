@@ -70,7 +70,7 @@ function App(): JSX.Element {
   const [translatedCaption, setTranslatedCaption] = useState<any>();
   const [sourceText, setSourceText] = useState<string | null>("environment") // ビデオ字幕の翻訳対象文字
   const [sourceTextId, setSourceTextId] = useState(null) // ビデオ字幕の翻訳
-  const [videoCaptionInfo, setVideoCaptionInfo] = useState("")
+  const [videoCaptionInfo, setVideoCaptionInfo] = useState<any>()
   
   
   // TODO: URL系は環境変数で管理する。
@@ -135,19 +135,24 @@ function App(): JSX.Element {
   }
 
   const hiddenTranslate = () => {
-    setSourceText("")
+    setSourceText(null)
+    setVideoCaptionInfo(null)
+    setTranslatedCaption(null)
     // setsourceTextId(null)
     setViewModal(false)
     setVideoPlaying(true)
   }
 
   const textDictional = async (text: string) => {
-    const url = "https://api.excelapi.org/dictionary/enja?word=pretty"
+    const url = `https://api.excelapi.org/dictionary/enja?word=${text}`
 
     const response = axios.get(url)
     .then((res: any) => {
-      const stringJson: any = JSON.stringify(res.data)
+      let stringJson: any = JSON.stringify(res.data)
       // return stringJson
+      stringJson = stringJson.replace(/[";]/g, "")
+      stringJson = stringJson.replace("/", 2);
+
       setVideoCaptionInfo(stringJson)
     })
     return response
@@ -194,14 +199,15 @@ function App(): JSX.Element {
     setTranslatedCaption(translated[0]);
   }
 
-  const pressVideoCaption = async (currCaptionIndex: any, caption: any) => {
+  const pressVideoCaption = async (currCaptionIndex: any, captionText: any) => {
+      hiddenTranslate();
+      setVideoPlaying(false)
     // text指定する際、caption.textと指定する必要がある。
     // new Promise(function(resolve, reject){
-      setSourceText("caption")
+      setSourceText(captionText)
       // setSourceTextId(captionId)
-      await textDictional("Hello") //.then((dictionaryText) => setVideoCaptionInfo(dictionaryText))
+      await textDictional(captionText) //.then((dictionaryText) => setVideoCaptionInfo(dictionaryText))
       getCurrTranslateCaption(currCaptionIndex) // 表示されている字幕のIndexを渡し、字幕をセットする
-      setVideoPlaying(false)
       setViewModal(true)
       // resolve(null)
     // }).then(() => {
@@ -222,15 +228,36 @@ function App(): JSX.Element {
   
 
   const VideoCaptionInfo = () => {
-    if(!viewModal) return; 
+    if(!viewModal) return;
+    const newlineStrings = videoCaptionInfo.split('/', 3);
+    // const Dictionary = newlineStrings.map((newlineString: any, index: any) => {
+    //   // return (
+    //   //   <>
+    //   //     {newlineString}
+    //   //     {index < newlineStrings.length - 1 ? '\n' : null}
+    //   //   </>
+    //   // );
+    //   <Text>あ</Text>
+    // })// 改行するコンポーネントを作成
     return (
       <View>
         <Modal isVisible={viewModal}>
           <Button title="close" onPress={hiddenTranslate}/>
-          <View>
+          <View style={styles.padding10}>
             <View style={styles.overlayHead}>
               <Text style={styles.originalWord}>{sourceText}</Text>
-              <Text style={styles.dictionaryInfo}>{videoCaptionInfo ? videoCaptionInfo : ''}</Text>
+              <View>
+                {
+                  newlineStrings.map((newlineString: any, index: any) => {
+                    return (
+                    <Text style={styles.dictionaryInfo}>
+                      {newlineString}
+                      {index < newlineStrings.length - 1 ? '\n' : null}
+                    </Text>
+                    )
+                  })
+                }
+              </View>
             </View>
             <View style={styles.overlayBody}>
               <Text style={styles.originalWord}>現在の字幕</Text>
@@ -385,6 +412,9 @@ const styles = StyleSheet.create({
   },
   zIndex100: {
     zIndex: 100,
+  },
+  padding10: {
+    padding: 10
   }
 });
 export default App;
