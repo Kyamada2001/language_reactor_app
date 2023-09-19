@@ -54,7 +54,15 @@ function App(): JSX.Element {
   const playerRef: any = useRef();
   //ステータス関係
   const [videoId, setVideoId] = useState("lhr4Ax4C_-4"); //youtubeのvideoId
-  const [videoPlaying, setVideoPlaying] = useState<boolean>(true) // ビデオ開始停止
+  /* videoStatus
+  unstarted 未開始
+  video cue 次のビデオキュー
+  buffering　現在のビデオは再生状態ですが、バッファリングのために停止しています
+  playing　再生中
+  paused	一時停止
+  ended 再生終了
+  */
+  const [videoStatus, setVideoStatus] = useState<string>("playing") // ビデオ開始停止
   const [viewModal, setViewModal] = useState(false) //モーダル開閉
 
   //字幕関係
@@ -140,7 +148,7 @@ function App(): JSX.Element {
     setTranslatedCaption(null)
     // setsourceTextId(null)
     setViewModal(false)
-    setVideoPlaying(true)
+    setVideoStatus('playing')
   }
 
   const textDictional = async (text: string) => {
@@ -201,19 +209,21 @@ function App(): JSX.Element {
 
   const pressVideoCaption = async (currCaptionIndex: any, captionText: any) => {
       hiddenTranslate();
-      setVideoPlaying(false)
     // text指定する際、caption.textと指定する必要がある。
-    // new Promise(function(resolve, reject){
+    new Promise(async function(resolve, reject){
+      setVideoStatus("paused")
       setSourceText(captionText)
       // setSourceTextId(captionId)
       await textDictional(captionText) //.then((dictionaryText) => setVideoCaptionInfo(dictionaryText))
       getCurrTranslateCaption(currCaptionIndex) // 表示されている字幕のIndexを渡し、字幕をセットする
+      // setViewModal(true)
+      resolve(null)
+    }).then(() => {
+      // 全ての処理が終わってからモーダル表示する
       setViewModal(true)
-      // resolve(null)
-    // }).then(() => {
-    //   // 全ての処理が終わってからモーダル表示する
-    //   setViewModal(true)
-    // })
+    }).catch((err) => {
+      setTranslatedCaption(err)
+    })
     
     // TODO: 時間で、currCaptionとあう要素を検索し、翻訳を取得する
   }
@@ -271,6 +281,10 @@ function App(): JSX.Element {
       </View>
     )
   }
+  const videoPlaying = (): boolean => {
+    if(videoStatus == 'playing' || videoStatus == 'buffering') return true;
+    else return false;
+  }
 
   return (
     <SafeAreaView>
@@ -283,12 +297,13 @@ function App(): JSX.Element {
           <YoutubePlayer
             ref={playerRef}
             height={youtubeHeight}
-            play={videoPlaying}
+            play={videoPlaying()}
             videoId={videoId}
+            onChangeState={(e: any) => setVideoStatus(e)}
             // onChangeState={}
           />
         </Pressable>
-        <View style={[styles.overlay, pressedVideo ? styles.overlayPress : styles.overlayNotPress]}>
+        <View style={[styles.overlay, pressedVideo || videoStatus == 'paused' ? styles.overlayPress : styles.overlayNotPress]}>
           {
             currCaptions ?
             captionTexts.map((texts: any, currCaptionIndex: any) => (
@@ -312,7 +327,9 @@ function App(): JSX.Element {
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
       >
-        <Text>{JSON.stringify(currCaptions)}</Text>
+              {
+       <Text>{videoStatus}</Text>
+      }
         <View>
           {
             captions.length > 0 ?
