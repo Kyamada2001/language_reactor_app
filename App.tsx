@@ -223,6 +223,7 @@ function App(): JSX.Element {
       setViewModal(true)
     }).catch((err) => {
       setTranslatedCaption(err)
+      setViewModal(true)
     })
     
     // TODO: 時間で、currCaptionとあう要素を検索し、翻訳を取得する
@@ -250,7 +251,6 @@ function App(): JSX.Element {
     //   <Text>あ</Text>
     // })// 改行するコンポーネントを作成
     return (
-      <View>
         <Modal isVisible={viewModal}>
           <Button title="close" onPress={hiddenTranslate}/>
           <View style={styles.padding10}>
@@ -278,7 +278,6 @@ function App(): JSX.Element {
             </View>
           </View>
         </Modal>
-      </View>
     )
   }
   const videoPlaying = (): boolean => {
@@ -292,8 +291,7 @@ function App(): JSX.Element {
         {/* 字幕をクリックした際、(pressVideoCaption発火時)、WebViewで翻訳を表示する */}
       <VideoCaptionInfo/>
       <View>
-        <Pressable
-          onPress={pressVideoFrame}>
+        <Pressable onPress={pressVideoFrame}>
           <YoutubePlayer
             ref={playerRef}
             height={youtubeHeight}
