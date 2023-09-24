@@ -33,6 +33,7 @@ import {
 import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
 import oauth from 'axios-oauth-client'
 import { Float } from 'react-native/Libraries/Types/CodegenTypes';
+import Icon from 'react-native-vector-icons/FontAwesome';
 
 const youtubeHeight = Dimensions.get('window').width / 16 * 9;
 
@@ -325,14 +326,14 @@ function App(): JSX.Element {
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
       >
-              {
-       <Text>{videoStatus}</Text>
-      }
         <View>
           {
             captions.length > 0 ?
             captions.map((subtitle: any, index: any) => (
               <View style={styles.captions}>
+                <View style={styles.playbackIcon}>
+                  <Icon name='volume-up'></Icon>
+                </View>
                 <Text style={styles.captionText} key={index}>{subtitle.text}</Text>
               </View>
             ))
@@ -374,10 +375,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row'
   },
   captions: {
-    justifyContent: 'center',
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'flex-start', // 左揃え
+    alignItems: 'center', 
     paddingBottom: 20,
     borderWidth: 1,
     borderBottomColor: 'black',
+  },
+  playbackIcon: {
+    flex: 1,
+    padding: 4
   },
   captionText: {
     zIndex: 10,
