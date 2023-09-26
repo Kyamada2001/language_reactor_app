@@ -230,6 +230,15 @@ function App(): JSX.Element {
     // TODO: 時間で、currCaptionとあう要素を検索し、翻訳を取得する
   }
 
+  // Youtube動画下の字幕を押下した際のイベント
+  const youtubePlayback = (time: Float) => {
+    const playStatus = videoStatus == 'playing' || videoStatus == 'buffering' ? true : false
+    playerRef.current?.seekTo(time)
+    // TODO: 処理が重くなるので、クリックしたものをそのままSEtできないか検討
+    // TODO: 翻訳を取得したりする際、かなり遅くなるので検討
+    getCurrCaption();
+  } 
+
 
   function pressVideoFrame() {
     setPressedVideo(true)
@@ -331,10 +340,10 @@ function App(): JSX.Element {
             captions.length > 0 ?
             captions.map((subtitle: any, index: any) => (
               <View style={styles.captions}>
-                <View style={styles.playbackIcon}>
-                  <Icon name='volume-up'></Icon>
-                </View>
-                <Text style={styles.captionText} key={index}>{subtitle.text}</Text>
+                  <TouchableOpacity style={styles.playbackIcon} onPress={() => youtubePlayback(parseFloat(subtitle.start))}>
+                    <Icon name='volume-up' size={20}></Icon>
+                  </TouchableOpacity>
+                  <Text style={styles.captionText} key={index}>{subtitle.text}</Text>
               </View>
             ))
             : <Text>字幕を表示中です。</Text>
@@ -369,7 +378,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: 'white',
-    marginRight: 4,
+      marginRight: 4,
   },
   captionContainer: {
     flexDirection: 'row'
@@ -379,12 +388,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'flex-start', // 左揃え
     alignItems: 'center', 
-    paddingBottom: 20,
+    paddingVertical: 10,
     borderWidth: 1,
     borderBottomColor: 'black',
   },
   playbackIcon: {
-    flex: 1,
+    display: 'flex',
     padding: 4
   },
   captionText: {
