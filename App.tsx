@@ -53,6 +53,8 @@ function App(): JSX.Element {
     text: string
   }
   const playerRef: any = useRef();
+  const captionScrollViewRef: any = useRef(null)
+
   //ステータス関係
   const [videoId, setVideoId] = useState("lhr4Ax4C_-4"); //youtubeのvideoId
   /* videoStatus
@@ -74,6 +76,8 @@ function App(): JSX.Element {
   const [currCaptions, setCurrCaptions] = useState(Array<Object>) // 現在再生している字幕情報
   const [currentTime, setCurrentTime] = useState<number | null>(null);
   const [pressedVideo, setPressedVideo] = useState<boolean>(false)
+  const [isCaptionCenter, setIsCaptionCenter] = useState<boolean>(true)
+  const [captionHeight, setCaptionHeight] = useState<number>(0)
 
   //モーダル関係内容
   const [translatedCaption, setTranslatedCaption] = useState<any>();
@@ -120,20 +124,29 @@ function App(): JSX.Element {
     if(!viewModal) getCurrCaption();
   }, [currentTime])
 
-  function splitCaptionText(subtitles: any) {
-    const splitTexts = subtitles.map(function(subtitle: any) {
-      const texts = subtitle.text.split(" ");
-      return texts;
-    })
+  // useEffect(() => {
+  //   if(!isCaptionCenter) return;
+  //   const x = 0
+  //   const y = captionHeight * currCaptionIndex! - captionHeight / 2
+  //   scrollCaptionView(x, y)
+  // }, [currCaptionIndex])
+
+  function splitCaptionText(subtitle: any) {
+    const splitTexts = subtitle.text.split(" ");
     setCaptionTexts(splitTexts)
   }
   function getCurrCaption() {
     if(captions.length > 0 && currentTime) {
-      const fetchedCurrCaptions: any = captions.filter(function(caption: any) {
+      let fetchedCurrCaptions: any;
+      let captionIndex: number;
+      captions.map(function(caption: any, index: any){
         const startTime = parseFloat(caption.start);
         const endTime = parseFloat(startTime + caption.duration);
 
-        return startTime <= currentTime && currentTime < endTime;
+        if(startTime <= currentTime && currentTime < endTime) {
+          fetchedCurrCaptions = caption;
+          captionIndex = index;
+        }
       })
       setCurrCaptions(fetchedCurrCaptions);
       // setCurrCaptionIndex(currCaptions.index);
@@ -197,8 +210,8 @@ function App(): JSX.Element {
     // return response;
   }
 
-  const getCurrTranslateCaption = (currCaptionIndex: any) => {
-    const sourceCaption: any = currCaptions[currCaptionIndex];
+  const getCurrTranslateCaption = () => {
+    const sourceCaption: any = currCaptions;
     const startTime = sourceCaption.start;
     const duration = sourceCaption.duration;
 
@@ -208,7 +221,7 @@ function App(): JSX.Element {
     setTranslatedCaption(translated[0]);
   }
 
-  const pressVideoCaption = async (currCaptionIndex: any, captionText: any) => {
+  const pressVideoCaption = async (captionText: any) => {
       hiddenTranslate();
     // text指定する際、caption.textと指定する必要がある。
     new Promise(async function(resolve, reject){
@@ -216,7 +229,7 @@ function App(): JSX.Element {
       setSourceText(captionText)
       // setSourceTextId(captionId)
       await textDictional(captionText) //.then((dictionaryText) => setVideoCaptionInfo(dictionaryText))
-      getCurrTranslateCaption(currCaptionIndex) // 表示されている字幕のIndexを渡し、字幕をセットする
+      getCurrTranslateCaption() // 表示されている字幕のIndexを渡し、字幕をセットする
       // setViewModal(true)
       resolve(null)
     }).then(() => {
@@ -226,8 +239,6 @@ function App(): JSX.Element {
       setTranslatedCaption(err)
       setViewModal(true)
     })
-    
-    // TODO: 時間で、currCaptionとあう要素を検索し、翻訳を取得する
   }
 
   // Youtube動画下の字幕を押下した際のイベント
@@ -245,6 +256,10 @@ function App(): JSX.Element {
     setTimeout(() => {
       setPressedVideo(false)
     }, 4000);
+  }
+
+  const scrollCaptionView = (x: number, y: number) => {
+    captionScrollViewRef?.current?.scrollTo({x,y,Animatable: true})
   }
   
 
@@ -314,13 +329,12 @@ function App(): JSX.Element {
         <View style={[styles.overlay, pressedVideo || videoStatus == 'paused' ? styles.overlayPress : styles.overlayNotPress]}>
           {
             currCaptions ?
-            captionTexts.map((texts: any, currCaptionIndex: any) => (
               <>
               <View style={styles.captionContainer}>
                 {
-                  texts.map((text: any, index: any) => {
+                  captionTexts.map((text: any, index: any) => {
                     return (
-                      <TouchableOpacity onPress={() => pressVideoCaption(currCaptionIndex, text)}>
+                      <TouchableOpacity onPress={() => pressVideoCaption(text)}>
                         <Text style={styles.overlayText} key={index}>{text}</Text>
                       </TouchableOpacity>
                     )
@@ -328,22 +342,29 @@ function App(): JSX.Element {
                 }
               </View>
               </>
-            )) : null
+            : null
           }
         </View>
       </View>
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
+        // ref={captionScrollViewRef}
       >
+        <Text>{JSON.stringify(videoPlaying)}</Text>
         <View>
           {
             captions.length > 0 ?
             captions.map((subtitle: any, index: any) => (
-              <View style={styles.captions}>
-                  <TouchableOpacity style={styles.playbackIcon} onPress={() => youtubePlayback(parseFloat(subtitle.start))}>
-                    <Icon name='volume-up' size={20}></Icon>
-                  </TouchableOpacity>
-                  <Text style={styles.captionText} key={index}>{subtitle.text}</Text>
+              <View 
+                style={styles.captions}
+                // onLayout={(element) => {
+                //   if(index == 0) setCaptionHeight(element.nativeEvent.layout.height)
+                // }}
+              >
+                <TouchableOpacity style={styles.playbackIcon} onPress={() => youtubePlayback(parseFloat(subtitle.start))}>
+                  <Icon name='volume-up' size={20}></Icon>
+                </TouchableOpacity>
+                <Text style={styles.captionText} key={index}>{subtitle.text}</Text>
               </View>
             ))
             : <Text>字幕を表示中です。</Text>
