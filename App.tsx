@@ -65,8 +65,9 @@ function App(): JSX.Element {
   paused	一時停止
   ended 再生終了
   */
-  const [videoStatus, setVideoStatus] = useState<string>("playing") // ビデオ開始停止
+  const [videoStatus, setVideoStatus] = useState<string>("") // ビデオ開始停止
   const [viewModal, setViewModal] = useState(false) //モーダル開閉
+  const [isVideoPlaying, setIsVideoPlaying] = useState<boolean>(true)
 
   //字幕関係
   const [captions, setCaptions] = useState<any>([]);
@@ -124,6 +125,17 @@ function App(): JSX.Element {
     if(!viewModal) getCurrCaption();
   }, [currentTime])
 
+  // TODo:ここ修正する必要ないかも。一旦修正見送りで
+  useEffect(() => {
+    if(videoStatus == 'playing' 
+    || videoStatus == 'buffering' 
+    || videoStatus == 'unstarted'
+    || (videoStatus == 'paused' && !viewModal)) {
+      setIsVideoPlaying(true)
+    } else {
+      setIsVideoPlaying(false)
+    }
+  }, [videoStatus])
   // useEffect(() => {
   //   if(!isCaptionCenter) return;
   //   const x = 0
@@ -225,7 +237,7 @@ function App(): JSX.Element {
       hiddenTranslate();
     // text指定する際、caption.textと指定する必要がある。
     new Promise(async function(resolve, reject){
-      setVideoStatus("paused")
+      setVideoStatus("paused") // これが原因。これなければ、useEffectで修正する必要なし
       setSourceText(captionText)
       // setSourceTextId(captionId)
       await textDictional(captionText) //.then((dictionaryText) => setVideoCaptionInfo(dictionaryText))
@@ -304,10 +316,6 @@ function App(): JSX.Element {
           </View>
         </Modal>
     )
-  }
-  const videoPlaying = (): boolean => {
-    if(videoStatus == 'playing' || videoStatus == 'buffering') return true;
-    else return false;
   }
 
   return (
