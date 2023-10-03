@@ -68,6 +68,7 @@ function App(): JSX.Element {
   const [videoStatus, setVideoStatus] = useState<string>("") // ビデオ開始停止
   const [viewModal, setViewModal] = useState(false) //モーダル開閉
   const [isVideoPlaying, setIsVideoPlaying] = useState<boolean>(true)
+  const captionViewBeforeSec = 1; // 字幕を取得する処理を考慮し、事前に処理開始秒数を早める時間。端末のスペックも影響あるので、調整必要
 
   //字幕関係
   const [captions, setCaptions] = useState<any>([]);
@@ -79,6 +80,7 @@ function App(): JSX.Element {
   const [pressedVideo, setPressedVideo] = useState<boolean>(false)
   const [isCaptionCenter, setIsCaptionCenter] = useState<boolean>(true)
   const [captionHeight, setCaptionHeight] = useState<number>(0)
+  const [nextCaptionTime, setNextCaptionTime] = useState<number | null>(); //次の字幕の時間
 
   //モーダル関係内容
   const [translatedCaption, setTranslatedCaption] = useState<any>();
@@ -116,13 +118,14 @@ function App(): JSX.Element {
     const timer = setInterval(async () => {
       const newTime: any = await playerRef.current?.getCurrentTime();
       if (newTime !== currentTime) {
-        setCurrentTime(newTime);
+          setCurrentTime(newTime);
       }
-    }, 500); // 0.5秒ごとに監視
+    }, 100); // 0.1秒ごとに監視
   }, []); // 依存配列を空にする
 
   useEffect(() => {
-    if(!viewModal) getCurrCaption();
+    // モーダルが開かれていない場合、字幕が表示されていない場合、次の字幕時間になった場合に字幕を取得
+    if(!viewModal && (!nextCaptionTime || nextCaptionTime <= currentTime)) getCurrCaption();
   }, [currentTime])
 
   // TODo:ここ修正する必要ないかも。一旦修正見送りで
@@ -143,24 +146,34 @@ function App(): JSX.Element {
   //   scrollCaptionView(x, y)
   // }, [currCaptionIndex])
 
-  function splitCaptionText(subtitle: any) {
+  function splitCaptionText(subtitle: YoutubeCaption) {
     const splitTexts = subtitle.text.split(" ");
     setCaptionTexts(splitTexts)
   }
   function getCurrCaption() {
-    if(captions.length > 0 && currentTime) {
+    if(captions.length > 0) {
       let fetchedCurrCaptions: any;
       let captionIndex: number;
-      captions.map(function(caption: any, index: any){
+      let currNextTime: number = null;
+      let sample: any;
+      captions.map(function(caption: YoutubeCaption, index: any){
         const startTime = parseFloat(caption.start);
         const endTime = parseFloat(startTime + caption.duration);
 
-        if(startTime <= currentTime && currentTime < endTime) {
+        // currCaptionIndexの次の場合、次の時間をセットする。
+        if(index == captionIndex + 1) {
+          sample = caption.start;
+          currNextTime = parseFloat(caption.start) - captionViewBeforeSec
+        }
+
+        // 時間が一致した場合、stateにセットする。
+        if((startTime - captionViewBeforeSec) <= currentTime && currentTime < endTime) {
           fetchedCurrCaptions = caption;
           captionIndex = index;
         }
       })
       setCurrCaptions(fetchedCurrCaptions);
+      setNextCaptionTime(currNextTime);
       // setCurrCaptionIndex(currCaptions.index);
       if(fetchedCurrCaptions){
         splitCaptionText(fetchedCurrCaptions)
@@ -254,12 +267,11 @@ function App(): JSX.Element {
   }
 
   // Youtube動画下の字幕を押下した際のイベント
-  const youtubePlayback = (time: Float) => {
-    const playStatus = videoStatus == 'playing' || videoStatus == 'buffering' ? true : false
+  const youtubePlayback = (time: number) => {
     playerRef.current?.seekTo(time)
     // TODO: 処理が重くなるので、クリックしたものをそのままSEtできないか検討
     // TODO: 翻訳を取得したりする際、かなり遅くなるので検討
-    getCurrCaption();
+    setCurrentTime(time);
   } 
 
 
@@ -328,7 +340,7 @@ function App(): JSX.Element {
           <YoutubePlayer
             ref={playerRef}
             height={youtubeHeight}
-            play={videoPlaying()}
+            play={isVideoPlaying}
             videoId={videoId}
             onChangeState={(e: any) => setVideoStatus(e)}
             // onChangeState={}
