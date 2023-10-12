@@ -5,7 +5,7 @@
  * @format
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { Button, Dimensions, TouchableOpacity } from 'react-native';
 import YoutubePlayer from "react-native-youtube-iframe";
 import  WebView from "react-native-webview"
@@ -67,26 +67,27 @@ function App(): JSX.Element {
   */
   const [videoStatus, setVideoStatus] = useState<string>("") // ビデオ開始停止
   const [viewModal, setViewModal] = useState(false) //モーダル開閉
+  const [isCaptionCenter, setIsCaptionCenter] = useState<boolean>(true)
   const [isVideoPlaying, setIsVideoPlaying] = useState<boolean>(true)
   const captionViewBeforeSec = 1; // 字幕を取得する処理を考慮し、事前に処理開始秒数を早める時間。端末のスペックも影響あるので、調整必要
 
   //字幕関係
   const [captions, setCaptions] = useState<any>([]);
-  const [captionTexts, setCaptionTexts] = useState([])
+  const [captionTexts, setCaptionTexts] = useState<any>()
   const [translatedCaptions, setTranslatedCaptions] = useState([])
   const [currCaptionIndex, setCurrCaptionIndex] = useState<number | null>(null); // 字幕全体に対する配列のIndex
   const [currCaptions, setCurrCaptions] = useState(Array<Object>) // 現在再生している字幕情報
   const [currentTime, setCurrentTime] = useState<number | null>(null);
   const [pressedVideo, setPressedVideo] = useState<boolean>(false)
-  const [isCaptionCenter, setIsCaptionCenter] = useState<boolean>(true)
   const [captionHeight, setCaptionHeight] = useState<number>(0)
-  const [nextCaptionTime, setNextCaptionTime] = useState<number | null>(); //次の字幕の時間
+  const [nextCaptionTime, setNextCaptionTime] = useState<number | null>(null); //次の字幕の時間
 
   //モーダル関係内容
   const [translatedCaption, setTranslatedCaption] = useState<any>();
   const [sourceText, setSourceText] = useState<string | null>("environment") // ビデオ字幕の翻訳対象文字
   const [sourceTextId, setSourceTextId] = useState(null) // ビデオ字幕の翻訳
   const [videoCaptionInfo, setVideoCaptionInfo] = useState<any>()
+  const [sample, setSample] = useState<any>();
   
   
   // TODO: URL系は環境変数で管理する。
@@ -97,7 +98,7 @@ function App(): JSX.Element {
   // const [charCaption, setCharCaption] = useState(Array<Array<String>>) この機能の実装はまだ先
 
   useEffect(() => {
-    const fetchYoutubecaptions = async () => { 
+    const fetchYoutubecaptions = async () => {
       const response = await fetch('http://localhost:9000/2015-03-31/functions/function/invocations', {
         method: 'POST',
         headers: {
@@ -117,7 +118,7 @@ function App(): JSX.Element {
     fetchYoutubecaptions();
     const timer = setInterval(async () => {
       const newTime: any = await playerRef.current?.getCurrentTime();
-      if (newTime !== currentTime) {
+      if (newTime != currentTime) {
           setCurrentTime(newTime);
       }
     }, 100); // 0.1秒ごとに監視
@@ -125,7 +126,9 @@ function App(): JSX.Element {
 
   useEffect(() => {
     // モーダルが開かれていない場合、字幕が表示されていない場合、次の字幕時間になった場合に字幕を取得
-    if(!viewModal && (!nextCaptionTime || nextCaptionTime <= currentTime)) getCurrCaption();
+    if(isVideoPlaying && !viewModal) {
+      getCurrCaption();
+    }
   }, [currentTime])
 
   // TODo:ここ修正する必要ないかも。一旦修正見送りで
@@ -139,12 +142,14 @@ function App(): JSX.Element {
       setIsVideoPlaying(false)
     }
   }, [videoStatus])
-  // useEffect(() => {
-  //   if(!isCaptionCenter) return;
-  //   const x = 0
-  //   const y = captionHeight * currCaptionIndex! - captionHeight / 2
-  //   scrollCaptionView(x, y)
-  // }, [currCaptionIndex])
+
+  useEffect(() => { // 動くか検証必要
+    if(isCaptionCenter){
+      scrollCaptionView()
+    }else {
+      return;
+    }
+  }, [currCaptionIndex])
 
   function splitCaptionText(subtitle: YoutubeCaption) {
     const splitTexts = subtitle.text.split(" ");
@@ -154,27 +159,25 @@ function App(): JSX.Element {
     if(captions.length > 0) {
       let fetchedCurrCaptions: any;
       let captionIndex: number;
-      let currNextTime: number = null;
-      let sample: any;
+      let currNextTime: number | null = null;
       captions.map(function(caption: YoutubeCaption, index: any){
         const startTime = parseFloat(caption.start);
         const endTime = parseFloat(startTime + caption.duration);
 
         // currCaptionIndexの次の場合、次の時間をセットする。
         if(index == captionIndex + 1) {
-          sample = caption.start;
           currNextTime = parseFloat(caption.start) - captionViewBeforeSec
         }
 
         // 時間が一致した場合、stateにセットする。
-        if((startTime - captionViewBeforeSec) <= currentTime && currentTime < endTime) {
+        if((startTime - captionViewBeforeSec) <= currentTime! && currentTime! < endTime) {
           fetchedCurrCaptions = caption;
           captionIndex = index;
         }
       })
       setCurrCaptions(fetchedCurrCaptions);
       setNextCaptionTime(currNextTime);
-      // setCurrCaptionIndex(currCaptions.index);
+      setCurrCaptionIndex(captionIndex!);
       if(fetchedCurrCaptions){
         splitCaptionText(fetchedCurrCaptions)
       }
@@ -282,7 +285,12 @@ function App(): JSX.Element {
     }, 4000);
   }
 
-  const scrollCaptionView = (x: number, y: number) => {
+  const scrollCaptionView = () => {
+    // 真ん中に来るように調整
+    const ajustNumber = 3;
+    const captionNumber: number = currCaptionIndex! - ajustNumber;
+    const x = 0
+    const y = captionHeight * captionNumber - captionHeight / 2;
     captionScrollViewRef?.current?.scrollTo({x,y,Animatable: true})
   }
   
@@ -290,15 +298,6 @@ function App(): JSX.Element {
   const VideoCaptionInfo = () => {
     if(!viewModal) return;
     const newlineStrings = videoCaptionInfo.split('/', 3);
-    // const Dictionary = newlineStrings.map((newlineString: any, index: any) => {
-    //   // return (
-    //   //   <>
-    //   //     {newlineString}
-    //   //     {index < newlineStrings.length - 1 ? '\n' : null}
-    //   //   </>
-    //   // );
-    //   <Text>あ</Text>
-    // })// 改行するコンポーネントを作成
     return (
         <Modal isVisible={viewModal}>
           <Button title="close" onPress={hiddenTranslate}/>
@@ -352,6 +351,7 @@ function App(): JSX.Element {
               <>
               <View style={styles.captionContainer}>
                 {
+                  captionTexts ? 
                   captionTexts.map((text: any, index: any) => {
                     return (
                       <TouchableOpacity onPress={() => pressVideoCaption(text)}>
@@ -359,6 +359,7 @@ function App(): JSX.Element {
                       </TouchableOpacity>
                     )
                   })
+                : ''
                 }
               </View>
               </>
@@ -366,23 +367,27 @@ function App(): JSX.Element {
           }
         </View>
       </View>
+      <TouchableWithoutFeedback onPress={()=> setIsCaptionCenter(false)}>
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
-        // ref={captionScrollViewRef}
+        ref={captionScrollViewRef}
       >
-        <Text>{JSON.stringify(videoPlaying)}</Text>
         <View>
           {
             captions.length > 0 ?
             captions.map((subtitle: any, index: any) => (
               <View 
                 style={styles.captions}
-                // onLayout={(element) => {
-                //   if(index == 0) setCaptionHeight(element.nativeEvent.layout.height)
-                // }}
+                onLayout={(element) => {
+                  if(index == 0) setCaptionHeight(element.nativeEvent.layout.height)
+                }}
               >
                 <TouchableOpacity style={styles.playbackIcon} onPress={() => youtubePlayback(parseFloat(subtitle.start))}>
-                  <Icon name='volume-up' size={20}></Icon>
+                  <Icon 
+                    name='volume-up'
+                    size={20}
+                    color={currCaptionIndex === index ? '#3b82f6' : '#0a0a0a'}
+                  />
                 </TouchableOpacity>
                 <Text style={styles.captionText} key={index}>{subtitle.text}</Text>
               </View>
@@ -391,6 +396,7 @@ function App(): JSX.Element {
           }
         </View>
       </ScrollView>
+      </TouchableWithoutFeedback>
     </SafeAreaView>
   );
 }
@@ -490,4 +496,4 @@ const styles = StyleSheet.create({
     padding: 10
   }
 });
-export default App;
+export default App
