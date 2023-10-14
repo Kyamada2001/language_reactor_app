@@ -21,6 +21,7 @@ import {
   View,
   Pressable,
   TouchableWithoutFeedback,
+  FlatList
 } from 'react-native';
 
 import {
@@ -34,7 +35,15 @@ import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
 import oauth from 'axios-oauth-client'
 import { Float } from 'react-native/Libraries/Types/CodegenTypes';
 import Icon from 'react-native-vector-icons/FontAwesome';
+import { positional } from 'yargs';
 
+//TODO: 処理重い
+//　・ScrollViewからFlatListに
+// 　・getCurrCaptionの実行頻度を遅くしたり
+//  ・英語訳を取得する際、時間ではなくindexで取得したり。
+//  ・
+
+// TODO: 訳が表示されるまで時間がかかる
 const youtubeHeight = Dimensions.get('window').width / 16 * 9;
 
 function App(): JSX.Element {
@@ -291,6 +300,7 @@ function App(): JSX.Element {
     const captionNumber: number = currCaptionIndex! - ajustNumber;
     const x = 0
     const y = captionHeight * captionNumber - captionHeight / 2;
+    if(y <= 0) return ;
     captionScrollViewRef?.current?.scrollTo({x,y,Animatable: true})
   }
   
@@ -367,36 +377,54 @@ function App(): JSX.Element {
           }
         </View>
       </View>
-      <TouchableWithoutFeedback onPress={()=> setIsCaptionCenter(false)}>
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        ref={captionScrollViewRef}
-      >
+      <View>
         <View>
-          {
-            captions.length > 0 ?
-            captions.map((subtitle: any, index: any) => (
-              <View 
-                style={styles.captions}
-                onLayout={(element) => {
-                  if(index == 0) setCaptionHeight(element.nativeEvent.layout.height)
-                }}
-              >
-                <TouchableOpacity style={styles.playbackIcon} onPress={() => youtubePlayback(parseFloat(subtitle.start))}>
-                  <Icon 
-                    name='volume-up'
-                    size={20}
-                    color={currCaptionIndex === index ? '#3b82f6' : '#0a0a0a'}
-                  />
-                </TouchableOpacity>
-                <Text style={styles.captionText} key={index}>{subtitle.text}</Text>
+          <TouchableWithoutFeedback onPress={()=> setIsCaptionCenter(false)}>
+            <ScrollView
+              contentInsetAdjustmentBehavior="automatic"
+              ref={captionScrollViewRef}
+            >
+              <View>
+                {
+                  captions.length > 0 ?
+                  captions.map((subtitle: any, index: any) => (
+                    <View 
+                      style={styles.captions}
+                      onLayout={(element) => {
+                        if(index == 0) setCaptionHeight(element.nativeEvent.layout.height)
+                      }}
+                    >
+                      <TouchableOpacity style={styles.playbackIcon} onPress={() => youtubePlayback(parseFloat(subtitle.start))}>
+                        <Icon 
+                          name='volume-up'
+                          size={20}
+                          color={currCaptionIndex === index ? '#3b82f6' : '#0a0a0a'}
+                        />
+                      </TouchableOpacity>
+                      <Text style={styles.captionText} key={index}>{subtitle.text}</Text>
+                    </View>
+                  ))
+                  : <Text>字幕を表示中です。</Text>
+                }
               </View>
-            ))
-            : <Text>字幕を表示中です。</Text>
-          }
+            </ScrollView>
+          </TouchableWithoutFeedback>
         </View>
-      </ScrollView>
-      </TouchableWithoutFeedback>
+        {
+          !isCaptionCenter ?
+          <View  style={styles.captionCenterButton}>
+            <TouchableWithoutFeedback
+            onPress={() => {
+              setIsCaptionCenter(true)
+              scrollCaptionView()
+            }}
+            >
+              <Icon name='unsorted' size={30} color={'#3b82f6'}/>
+            </TouchableWithoutFeedback>
+          </View>
+          : ''
+        }
+      </View>
     </SafeAreaView>
   );
 }
@@ -488,6 +516,12 @@ const styles = StyleSheet.create({
     flex: 1,
     zIndex: 100,
     // width: '100%'
+  },
+  captionCenterButton: {
+    position: 'absolute', // 絶対位置指定
+    top: 10, // 上からの距離
+    right: 10, // 右からの距離
+    borderRadius: 25, // 角丸
   },
   zIndex100: {
     zIndex: 100,
