@@ -12,20 +12,39 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import Video from './pages/video';
 import StudyWord from './pages/sturdyWord';
-import UnderMenu from './components/underMenu';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import Icon from 'react-native-vector-icons/FontAwesome';
 
 const Stack = createNativeStackNavigator();
+const Tab = createBottomTabNavigator();
 
 function App(): JSX.Element {
   return (
     <>
       <NavigationContainer>
-        <Stack.Navigator initialRouteName="video">
-          <Stack.Screen name="video" component={Video} />
-          <Stack.Screen name="studyWord" component={StudyWord} />
-        </Stack.Navigator>
+        <Tab.Navigator initialRouteName="video">
+          <Tab.Screen 
+            name="video" 
+            component={Video}
+            options={{
+              tabBarLabel: 'ビデオ選択',
+              tabBarIcon: ({ color, size }) => (
+                <Icon name='search' size={30}/>
+              ),
+            }} 
+          />
+          <Tab.Screen 
+            name="studyWord" 
+            component={StudyWord}
+            options={{
+              tabBarLabel: '単語帳',
+              tabBarIcon: ({ color, size }) => (
+                <Icon name='pencil' size={30}/>
+              ),
+            }} 
+          />
+        </Tab.Navigator>
       </NavigationContainer> 
-      <UnderMenu/>
     </>
   )
 }
