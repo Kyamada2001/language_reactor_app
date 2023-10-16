@@ -42,11 +42,11 @@ function UnderMenu(): JSX.Element {
     return (
         <View style={styles.container}>
             <View style={styles.content}>
-                <Icon name='search' size={40}/>
+                <Icon name='search' size={30}/>
                 <Text style={styles.contentText}>ビデオ選択</Text>    
             </View>
             <View>
-                <Icon name='pencil' size={40}/>
+                <Icon name='pencil' size={30}/>
                 <Text style={styles.contentText}>単語帳</Text>    
             </View>
         </View>
@@ -61,8 +61,10 @@ const styles = StyleSheet.create({
         right: 0,
         flex: 1,
         flexDirection: 'row',
-        justifyContent: 'flex-start', // 左揃え
+        justifyContent: 'space-evenly', // 左揃え
         alignItems: 'center', 
+        width: '100%',
+        backgroundColor: '#f8f8ff',
     },
     content: {
         paddingVertical: 5,
