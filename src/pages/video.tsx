@@ -21,7 +21,8 @@ import {
   View,
   Pressable,
   TouchableWithoutFeedback,
-  FlatList
+  FlatList,
+  TextInput
 } from 'react-native';
 
 import {
@@ -44,9 +45,44 @@ import { positional } from 'yargs';
 //  ・
 
 // TODO: 訳が表示されるまで時間がかかる
-const youtubeHeight = Dimensions.get('window').width / 16 * 9;
+interface ChildComponentProps {
+  inputFunction: (videoId: string) => void; // プロップスの型を定義
+}
 
-function App(): JSX.Element {
+function InputUrl({inputFunction}: ChildComponentProps): JSX.Element {
+  const [url, setUrl] = useState<string>("")
+  const checkUrl = () => {
+    // TODO:　URLをチェックする処理を追加
+    return true
+  }
+  const getVideoId = (url: string) => {
+    return "lhr4Ax4C_-4"
+  }
+  const submitBtn = () => {
+    const isUrl = checkUrl();
+    const fetchedVideoId: string = getVideoId(url)
+    if(fetchedVideoId) inputFunction(fetchedVideoId)
+  }
+  return (
+    <View>
+        <Text>YoutubeのURLを入力</Text>    
+        <TextInput
+            onChangeText={setUrl}
+            value={url}
+        />
+        <Button 
+            title="送信" 
+            onPress={() => {submitBtn()}}
+        />
+    </View>
+  )
+}
+
+type videoProps = {
+  videoId: string
+}
+
+function Video(props: videoProps): JSX.Element {
   type YoutubeResponse = {
     caption: {
 
@@ -65,7 +101,8 @@ function App(): JSX.Element {
   const captionScrollViewRef: any = useRef(null)
 
   //ステータス関係
-  const [videoId, setVideoId] = useState("lhr4Ax4C_-4"); //youtubeのvideoId
+  const youtubeHeight = Dimensions.get('window').width / 16 * 9;
+  const [videoId, setVideoId] = useState<string | null>(props.videoId); //youtubeのvideoId
   /* videoStatus
   unstarted 未開始
   video cue 次のビデオキュー
@@ -340,8 +377,7 @@ function App(): JSX.Element {
   }
 
   return (
-    <SafeAreaView>
-      <StatusBar/>
+    <>
         {/* 字幕をクリックした際、(pressVideoCaption発火時)、WebViewで翻訳を表示する */}
       <VideoCaptionInfo/>
       <View>
@@ -350,7 +386,7 @@ function App(): JSX.Element {
             ref={playerRef}
             height={youtubeHeight}
             play={isVideoPlaying}
-            videoId={videoId}
+            videoId={videoId!}
             onChangeState={(e: any) => setVideoStatus(e)}
             // onChangeState={}
           />
@@ -425,7 +461,7 @@ function App(): JSX.Element {
           : ''
         }
       </View>
-    </SafeAreaView>
+    </>
   );
 }
 const styles = StyleSheet.create({
@@ -530,4 +566,19 @@ const styles = StyleSheet.create({
     padding: 10
   }
 });
+
+const App = () =>{
+  const [videoId, setVideoId] = useState<string>(""); //youtubeのvideoId
+  const inputUrl = (fetchedVideoId: any) => {
+    setVideoId(fetchedVideoId)
+  }
+  return (
+    <>
+      {
+        videoId ? <Video videoId={videoId}/> : <InputUrl inputFunction={inputUrl}/>
+      }
+    </>
+  )
+}
+
 export default App
