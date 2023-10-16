@@ -18,17 +18,15 @@ const Stack = createNativeStackNavigator();
 
 function App(): JSX.Element {
   return (
-    <SafeAreaView>
-      <StatusBar/>
-      <Video/>
-      {/* <NavigationContainer>
+    <>
+      <NavigationContainer>
         <Stack.Navigator initialRouteName="video">
           <Stack.Screen name="video" component={Video} />
           <Stack.Screen name="studyWord" component={StudyWord} />
         </Stack.Navigator>
-      </NavigationContainer> */}
-      {/* <UnderMenu/> */}
-    </SafeAreaView>
+      </NavigationContainer> 
+      <UnderMenu/>
+    </>
   )
 }
 export default App;
