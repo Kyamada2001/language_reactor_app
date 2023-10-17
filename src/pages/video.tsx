@@ -44,36 +44,71 @@ import { positional } from 'yargs';
 //  ・英語訳を取得する際、時間ではなくindexで取得したり。
 //  ・
 
+const errorCode: number = 1;
+const successCode: number = 2;
 // TODO: 訳が表示されるまで時間がかかる
 interface ChildComponentProps {
   inputFunction: (videoId: string) => void; // プロップスの型を定義
 }
 
 function InputUrl({inputFunction}: ChildComponentProps): JSX.Element {
+  type Message = {
+    code: number, // errorかprimary
+    text: string,
+  }
   const [url, setUrl] = useState<string>("")
-  const checkUrl = () => {
-    // TODO:　URLをチェックする処理を追加
-    return true
-  }
-  const getVideoId = (url: string) => {
-    return "lhr4Ax4C_-4"
-  }
+  const [fetchedVideoId, setFetchedVideoId] = useState<string>("")
+  const [messages, setMessages] = useState<Array<Message>>([])
+  const youtubeRegex = /(?:https?:\/\/)?(?:www\.)?youtube\.com\/watch\?v=([^&]+)/;
+  // TODO:　URLをチェックする処理を追加
   const submitBtn = () => {
-    const isUrl = checkUrl();
-    const fetchedVideoId: string = getVideoId(url)
+    const match: any = url.match(youtubeRegex);
+    if (match) {
+      const extractedVideoId = match[1];
+      setFetchedVideoId(extractedVideoId);
+    } else {
+      // Alert.alert('エラー', '有効なYouTubeのURLを入力してください');
+      const newMessage: Message = {
+        code: errorCode,
+        text: 'URLが正しくありません。'
+      }
+      
+      setMessages([newMessage])
+      return false;
+    }
     if(fetchedVideoId) inputFunction(fetchedVideoId)
   }
   return (
-    <View>
-        <Text>YoutubeのURLを入力</Text>    
-        <TextInput
+    <View style={styles.inputContainer}>
+      <View style={{width: '100%'}}>
+        <View style={{marginBottom: 15}}>
+          <Text style={styles.labelText}>YoutubeのURLを入力</Text>    
+          <TextInput
+            style={styles.textInput}
             onChangeText={setUrl}
             value={url}
-        />
-        <Button 
-            title="送信" 
-            onPress={() => {submitBtn()}}
-        />
+          />
+        </View>
+         <TouchableOpacity 
+          style={[styles.submitBtn]} 
+          onPress={() => {submitBtn()}}
+        >
+          <Text style={[styles.buttonText]}>ビデオ選択</Text>
+        </TouchableOpacity>
+        <View>
+          {
+            messages.length > 0 ?
+            messages.map((message: Message) => {
+              return (
+                <>
+                  <Text style={message.code == errorCode ? styles.errorMessage : styles.primaryMessage}>{message.text}</Text>
+                </>
+              )
+            })
+            : ''
+          }
+        </View>
+      </View>
     </View>
   )
 }
@@ -464,7 +499,7 @@ function Video(props: videoProps): JSX.Element {
     </>
   );
 }
-const styles = StyleSheet.create({
+  const styles = StyleSheet.create({
   container: {
     flex: 1,
     position: 'relative', // 必要に応じて調整
@@ -564,6 +599,48 @@ const styles = StyleSheet.create({
   },
   padding10: {
     padding: 10
+  },
+
+  //inputUrlのStyle
+  textInput: {
+    height: 40,
+    borderColor: '#6b7280',
+    borderWidth: 1,
+    width: '100%'
+  },
+  labelText: {
+    color: '#6b7280',
+    fontSize: 13,
+    marginBottom: 5,
+  },
+  submitBtn: {
+    backgroundColor: '#3498db',
+    padding: 10,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  inputContainer: {
+    height: '100%',
+    flex: 1,
+    alignItems: 'center',
+    margin: 15,
+  },
+  errorMessage: {
+    color: '#dc2626',
+    fontSize: 13,
+    marginBottom: 5,
+    margin: 10,
+  },
+  primaryMessage: {
+    color: '#22c55e',
+    fontSize: 13,
+    marginBottom: 5,
+    margin: 10,
   }
 });
 

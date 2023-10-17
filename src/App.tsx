@@ -31,6 +31,7 @@ function App(): JSX.Element {
               tabBarIcon: ({ color, size }) => (
                 <Icon name='search' size={30}/>
               ),
+              unmountOnBlur: true
             }} 
           />
           <Tab.Screen 
