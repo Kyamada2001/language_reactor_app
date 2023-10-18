@@ -46,6 +46,7 @@ import { positional } from 'yargs';
 
 const errorCode: number = 1;
 const successCode: number = 2;
+const CAPTION_HEIGHT = 60;
 // TODO: 訳が表示されるまで時間がかかる
 interface ChildComponentProps {
   inputFunction: (videoId: string) => void; // プロップスの型を定義
@@ -225,11 +226,7 @@ function Video(props: videoProps): JSX.Element {
   }, [videoStatus])
 
   useEffect(() => { // 動くか検証必要
-    if(isCaptionCenter){
-      scrollCaptionView()
-    }else {
-      return;
-    }
+    scrollCaptionView(true)
   }, [currCaptionIndex])
 
   function splitCaptionText(subtitle: YoutubeCaption) {
@@ -258,8 +255,8 @@ function Video(props: videoProps): JSX.Element {
       })
       setCurrCaptions(fetchedCurrCaptions);
       setNextCaptionTime(currNextTime);
-      setCurrCaptionIndex(captionIndex!);
       if(fetchedCurrCaptions){
+        setCurrCaptionIndex(captionIndex!);
         splitCaptionText(fetchedCurrCaptions)
       }
     }
@@ -274,7 +271,7 @@ function Video(props: videoProps): JSX.Element {
     setVideoStatus('playing')
   }
 
-  const textDictional = async (text: string) => {
+  const textDictional = (text: string) => {
     const url = `https://api.excelapi.org/dictionary/enja?word=${text}`
 
     const response = axios.get(url)
@@ -330,24 +327,15 @@ function Video(props: videoProps): JSX.Element {
     setTranslatedCaption(translated[0]);
   }
 
-  const pressVideoCaption = async (captionText: any) => {
-      hiddenTranslate();
+  const pressVideoCaption = (captionText: any) => {
+    hiddenTranslate();
     // text指定する際、caption.textと指定する必要がある。
-    new Promise(async function(resolve, reject){
       setVideoStatus("paused") // これが原因。これなければ、useEffectで修正する必要なし
       setSourceText(captionText)
-      // setSourceTextId(captionId)
-      await textDictional(captionText) //.then((dictionaryText) => setVideoCaptionInfo(dictionaryText))
+      textDictional(captionText) //.then((dictionaryText) => setVideoCaptionInfo(dictionaryText))
       getCurrTranslateCaption() // 表示されている字幕のIndexを渡し、字幕をセットする
-      // setViewModal(true)
-      resolve(null)
-    }).then(() => {
       // 全ての処理が終わってからモーダル表示する
       setViewModal(true)
-    }).catch((err) => {
-      setTranslatedCaption(err)
-      setViewModal(true)
-    })
   }
 
   // Youtube動画下の字幕を押下した際のイベント
@@ -366,19 +354,24 @@ function Video(props: videoProps): JSX.Element {
     }, 4000);
   }
 
-  const scrollCaptionView = () => {
+  const scrollCaptionView = (animated: boolean) => {
+    if(isCaptionCenter && currCaptionIndex){
     // 真ん中に来るように調整
-    const ajustNumber = 3;
-    const captionNumber: number = currCaptionIndex! - ajustNumber;
-    const x = 0
-    const y = captionHeight * captionNumber - captionHeight / 2;
-    if(y <= 0) return ;
-    captionScrollViewRef?.current?.scrollTo({x,y,Animatable: true})
+    const ajustNumber = 2;
+    const scrollIndex = currCaptionIndex - ajustNumber;
+    captionScrollViewRef?.current?.scrollToIndex({
+      index: scrollIndex >= 0 ? scrollIndex : currCaptionIndex,
+      viewPosition: 0,
+      animated: animated,
+    })
+  }else {
+    return ;
+  }
   }
   
 
   const VideoCaptionInfo = () => {
-    if(!viewModal) return;
+    if(!viewModal || !videoCaptionInfo) return;
     const newlineStrings = videoCaptionInfo.split('/', 3);
     return (
         <Modal isVisible={viewModal}>
@@ -413,7 +406,7 @@ function Video(props: videoProps): JSX.Element {
 
   return (
     <>
-        {/* 字幕をクリックした際、(pressVideoCaption発火時)、WebViewで翻訳を表示する */}
+      {/* 字幕をクリックした際、(pressVideoCaption発火時)、WebViewで翻訳を表示する */}
       <VideoCaptionInfo/>
       <View>
         <Pressable onPress={pressVideoFrame}>
@@ -451,34 +444,32 @@ function Video(props: videoProps): JSX.Element {
       <View>
         <View>
           <TouchableWithoutFeedback onPress={()=> setIsCaptionCenter(false)}>
-            <ScrollView
-              contentInsetAdjustmentBehavior="automatic"
-              ref={captionScrollViewRef}
-            >
-              <View>
-                {
-                  captions.length > 0 ?
-                  captions.map((subtitle: any, index: any) => (
+            {
+              captions.length > 0 ?
+              <FlatList
+                ref={captionScrollViewRef}
+                data={captions}
+                keyExtractor={(item) => item.id}
+                getItemLayout={(data, index) => (
+                  {length: CAPTION_HEIGHT, offset: CAPTION_HEIGHT * index, index}
+                )}
+                renderItem={({item,index}) => (
                     <View 
                       style={styles.captions}
-                      onLayout={(element) => {
-                        if(index == 0) setCaptionHeight(element.nativeEvent.layout.height)
-                      }}
                     >
-                      <TouchableOpacity style={styles.playbackIcon} onPress={() => youtubePlayback(parseFloat(subtitle.start))}>
+                      <TouchableOpacity style={styles.playbackIcon} onPress={() => youtubePlayback(parseFloat(item.start))}>
                         <Icon 
                           name='volume-up'
                           size={20}
                           color={currCaptionIndex === index ? '#3b82f6' : '#0a0a0a'}
                         />
                       </TouchableOpacity>
-                      <Text style={styles.captionText} key={index}>{subtitle.text}</Text>
+                      <Text style={styles.captionText} key={index}>{item.text}</Text>
                     </View>
-                  ))
-                  : <Text>字幕を表示中です。</Text>
-                }
-              </View>
-            </ScrollView>
+                )}
+              ></FlatList>
+              : <Text>字幕を表示中です。</Text>
+            }
           </TouchableWithoutFeedback>
         </View>
         {
@@ -487,7 +478,7 @@ function Video(props: videoProps): JSX.Element {
             <TouchableWithoutFeedback
             onPress={() => {
               setIsCaptionCenter(true)
-              scrollCaptionView()
+              scrollCaptionView(false)
             }}
             >
               <Icon name='unsorted' size={30} color={'#3b82f6'}/>
@@ -537,6 +528,7 @@ function Video(props: videoProps): JSX.Element {
     paddingVertical: 10,
     borderWidth: 1,
     borderBottomColor: 'black',
+    height: CAPTION_HEIGHT,
   },
   playbackIcon: {
     display: 'flex',
