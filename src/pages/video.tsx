@@ -67,6 +67,7 @@ function InputUrl({inputFunction}: ChildComponentProps): JSX.Element {
     if (match) {
       const extractedVideoId = match[1];
       setFetchedVideoId(extractedVideoId);
+      inputFunction(fetchedVideoId)
     } else {
       // Alert.alert('エラー', '有効なYouTubeのURLを入力してください');
       const newMessage: Message = {
@@ -77,7 +78,6 @@ function InputUrl({inputFunction}: ChildComponentProps): JSX.Element {
       setMessages([newMessage])
       return false;
     }
-    if(fetchedVideoId) inputFunction(fetchedVideoId)
   }
   return (
     <View style={styles.inputContainer}>
@@ -86,16 +86,16 @@ function InputUrl({inputFunction}: ChildComponentProps): JSX.Element {
           <Text style={styles.labelText}>YoutubeのURLを入力</Text>    
           <TextInput
             style={styles.textInput}
-            onChangeText={setUrl}
+            onChangeText={(text) => setUrl(text)}
             value={url}
           />
         </View>
-         <TouchableOpacity 
+        <Pressable
           style={[styles.submitBtn]} 
           onPress={() => {submitBtn()}}
         >
           <Text style={[styles.buttonText]}>ビデオ選択</Text>
-        </TouchableOpacity>
+        </Pressable>
         <View>
           {
             messages.length > 0 ?
