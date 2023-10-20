@@ -24,6 +24,7 @@ import {
   FlatList,
   TextInput
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import {
   Colors,
@@ -39,9 +40,53 @@ import Icon from 'react-native-vector-icons/FontAwesome';
 
 
 function StudyWord(): JSX.Element {
+    const [sample, setSample] = useState<any>()
+    const [studyWords, setStudyWords] = useState<any>();
+
+    const setWordStore = async () => {
+        const newSaveDatas = {
+            enToJp: [{
+                text: "English",
+                translated: "日本語"
+            }]
+          }
+        const saveDatasString = JSON.stringify(newSaveDatas);
+        try {
+            await AsyncStorage.setItem(
+                'testData',
+                saveDatasString
+            );
+          } catch (error: any) {
+            setSample(JSON.stringify(error))
+          }
+    }
+
+    const getWordStore = async () => {
+        try {
+            const words: any = await AsyncStorage.getItem('testData');
+            setStudyWords(JSON.parse(words));
+          } catch (error) {
+            setSample(JSON.stringify(error))
+          }
+    }
+
+    useEffect(() => {
+        setWordStore()// サンプルデータ登録
+        getWordStore()
+    })
     return (
         <View style={styles.container}>
             <Text>単語帳</Text>
+            {
+                studyWords ? 
+                <Text>{JSON.stringify(studyWords.enToJp.text)}</Text>
+                : ''
+            }
+            {
+                sample ? 
+                <Text>{sample}</Text>
+                : ''
+            }
         </View>
     )
 }
