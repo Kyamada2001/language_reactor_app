@@ -36,6 +36,7 @@ import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
 import oauth from 'axios-oauth-client'
 import { Float } from 'react-native/Libraries/Types/CodegenTypes';
 import Icon from 'react-native-vector-icons/FontAwesome';
+import Tts from 'react-native-tts';
 //TODO: こっちの方がライブラリとして優秀かも
 // import { Modalize } from 'react-native-modalize';
 
@@ -199,6 +200,7 @@ function Video(props: videoProps): JSX.Element {
     }
 
     fetchYoutubecaptions();
+    Tts.setDefaultLanguage('en-US');
     const timer = setInterval(async () => {
       const newTime: any = await playerRef.current?.getCurrentTime();
       if (newTime != currentTime) {
@@ -337,6 +339,9 @@ function Video(props: videoProps): JSX.Element {
     getCurrTranslateCaption() // 表示されている字幕のIndexを渡し、字幕をセットする
     // 全ての処理が終わってからモーダル表示する
     setViewModal(true)
+    setTimeout(() => {
+      speachText(captionText)
+    }, 500);
   }
 
   // Youtube動画下の字幕を押下した際のイベント
@@ -369,6 +374,10 @@ function Video(props: videoProps): JSX.Element {
   }
   }
 
+  const speachText = (text: string) => {
+    Tts.speak(text);
+  }
+
   const VideoCaptionModal = () => {
     if(!viewModal || !videoCaptionInfo) return;
     const newlineStrings = videoCaptionInfo.split('/', 3);
@@ -379,7 +388,12 @@ function Video(props: videoProps): JSX.Element {
               <Icon name='close' size={20}/>
             </TouchableOpacity>
             <View style={styles.overlayHead}>
-              <Text style={styles.originalWord}>{sourceText}</Text>
+              <View style={styles.overlayHeader}>
+                <Text style={styles.originalWord}>{sourceText}</Text>
+                <TouchableOpacity style={styles.playbackIcon} onPress={() => speachText(sourceText!)}>
+                    <Icon name='volume-up' size={20}/>
+                </TouchableOpacity>
+              </View>
               <View>
                 {
                   newlineStrings.map((newlineString: any, index: any) => {
@@ -562,6 +576,10 @@ function Video(props: videoProps): JSX.Element {
     backgroundColor: 'dodgerblue',
     width: '100%',
     padding: 10
+  },
+  overlayHeader: {
+    alignItems: 'center', 
+    flexDirection: 'row'
   },
   overlayBody: {
     backgroundColor: 'rebeccapurple',
