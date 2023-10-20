@@ -36,7 +36,8 @@ import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
 import oauth from 'axios-oauth-client'
 import { Float } from 'react-native/Libraries/Types/CodegenTypes';
 import Icon from 'react-native-vector-icons/FontAwesome';
-import { positional } from 'yargs';
+//TODO: こっちの方がライブラリとして優秀かも
+// import { Modalize } from 'react-native-modalize';
 
 //TODO: 処理重い
 //　・ScrollViewからFlatListに
@@ -330,12 +331,12 @@ function Video(props: videoProps): JSX.Element {
   const pressVideoCaption = (captionText: any) => {
     hiddenTranslate();
     // text指定する際、caption.textと指定する必要がある。
-      setVideoStatus("paused") // これが原因。これなければ、useEffectで修正する必要なし
-      setSourceText(captionText)
-      textDictional(captionText) //.then((dictionaryText) => setVideoCaptionInfo(dictionaryText))
-      getCurrTranslateCaption() // 表示されている字幕のIndexを渡し、字幕をセットする
-      // 全ての処理が終わってからモーダル表示する
-      setViewModal(true)
+    setVideoStatus("paused") // これが原因。これなければ、useEffectで修正する必要なし
+    setSourceText(captionText)
+    textDictional(captionText) //.then((dictionaryText) => setVideoCaptionInfo(dictionaryText))
+    getCurrTranslateCaption() // 表示されている字幕のIndexを渡し、字幕をセットする
+    // 全ての処理が終わってからモーダル表示する
+    setViewModal(true)
   }
 
   // Youtube動画下の字幕を押下した際のイベント
@@ -344,8 +345,7 @@ function Video(props: videoProps): JSX.Element {
     // TODO: 処理が重くなるので、クリックしたものをそのままSEtできないか検討
     // TODO: 翻訳を取得したりする際、かなり遅くなるので検討
     setCurrentTime(time);
-  } 
-
+  }
 
   function pressVideoFrame() {
     setPressedVideo(true)
@@ -368,15 +368,16 @@ function Video(props: videoProps): JSX.Element {
     return ;
   }
   }
-  
 
-  const VideoCaptionInfo = () => {
+  const VideoCaptionModal = () => {
     if(!viewModal || !videoCaptionInfo) return;
     const newlineStrings = videoCaptionInfo.split('/', 3);
     return (
-        <Modal isVisible={viewModal}>
-          <Button title="close" onPress={hiddenTranslate}/>
+      <Modal isVisible={viewModal}>
           <View style={styles.padding10}>
+            <TouchableOpacity onPress={hiddenTranslate} style={styles.modalCloseBtn}>
+              <Icon name='close' size={20}/>
+            </TouchableOpacity>
             <View style={styles.overlayHead}>
               <Text style={styles.originalWord}>{sourceText}</Text>
               <View>
@@ -407,7 +408,7 @@ function Video(props: videoProps): JSX.Element {
   return (
     <>
       {/* 字幕をクリックした際、(pressVideoCaption発火時)、WebViewで翻訳を表示する */}
-      <VideoCaptionInfo/>
+      <VideoCaptionModal/>
       <View>
         <Pressable onPress={pressVideoFrame}>
           <YoutubePlayer
@@ -443,7 +444,7 @@ function Video(props: videoProps): JSX.Element {
       </View>
       <View>
         <View>
-          <TouchableWithoutFeedback onPress={()=> setIsCaptionCenter(false)}>
+          <TouchableWithoutFeedback onPressIn={()=> setIsCaptionCenter(false)}>
             {
               captions.length > 0 ?
               <FlatList
@@ -560,10 +561,12 @@ function Video(props: videoProps): JSX.Element {
   overlayHead: {
     backgroundColor: 'dodgerblue',
     width: '100%',
+    padding: 10
   },
   overlayBody: {
     backgroundColor: 'rebeccapurple',
     width: '100%',
+    padding: 10
   },
   originalWord: {
     fontSize: 17,
@@ -579,6 +582,13 @@ function Video(props: videoProps): JSX.Element {
     flex: 1,
     zIndex: 100,
     // width: '100%'
+  },
+  modalCloseBtn: {
+    position: 'absolute', // 絶対位置指定
+    top: 15, // 上からの距離
+    right: 15, // 右からの距離
+    borderRadius: 25, // 角丸
+    zIndex: 150,
   },
   captionCenterButton: {
     position: 'absolute', // 絶対位置指定
