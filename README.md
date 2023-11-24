@@ -86,7 +86,12 @@ To learn more about React Native, take a look at the following resources:
 # 参考
 
 https://dev-yakuza.posstree.com/react-native/react-native-vector-icons/
+https://oblador.github.io/react-native-vector-icons/
 
 # 注意
 
 不必要なttfファイルは削除すること
+
+## AsyncStorage導入
+#参考
+https://qiita.com/kubota_ndatacom/items/39b5586192f8e4dfd3c5
