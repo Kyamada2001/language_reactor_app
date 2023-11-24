@@ -8,7 +8,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { Button, Dimensions, TouchableOpacity } from 'react-native';
 import YoutubePlayer from "react-native-youtube-iframe";
-import  WebView from "react-native-webview"
 import Modal from "react-native-modal";
 import * as Animatable from 'react-native-animatable';
 import {
@@ -48,7 +47,7 @@ import Tts from 'react-native-tts';
 
 const errorCode: number = 1;
 const successCode: number = 2;
-const CAPTION_HEIGHT = 60;
+const CAPTION_HEIGHT = 70;
 // TODO: 訳が表示されるまで時間がかかる
 interface ChildComponentProps {
   inputFunction: (videoId: string) => void; // プロップスの型を定義
@@ -147,7 +146,6 @@ function Video(props: videoProps): JSX.Element {
   const [isCaptionCenter, setIsCaptionCenter] = useState<boolean>(true)
   const [isVideoPlaying, setIsVideoPlaying] = useState<boolean>(true)
   const captionViewBeforeSec = 1; // 字幕を取得する処理を考慮し、事前に処理開始秒数を早める時間。端末のスペックも影響あるので、調整必要
-  const [translatePosition, setTranslatePosition] = useState<Position>();
 
   //字幕関係
   const [captions, setCaptions] = useState<any>([]);
@@ -270,49 +268,21 @@ function Video(props: videoProps): JSX.Element {
   }
 
   const textDictional = (text: string) => {
-    const url = `https://api.excelapi.org/dictionary/enja?word=${text}`
+    const url = `https://jisho.org/api/v1/search/words?keyword="${text}"`
 
-    const response = axios.get(url)
-    .then((res: any) => {
-      let stringJson: any = JSON.stringify(res.data)
-      // return stringJson
-      stringJson = stringJson.replace(/[";]/g, "")
-      stringJson = stringJson.replace("/", 2);
-
-      setVideoCaptionInfo(stringJson)
+    axios.get(url).then((response: any) => {
+      const data = response.data.data
+      if(!data) setVideoCaptionInfo('-')
+      else {
+    
+        const dictionary: string = data.filter((item: any, index: number) => index < 3)
+        .map((item: any) => item.slug)
+        .join(',');
+        setVideoCaptionInfo(dictionary)
+      }
     })
-    return response
   }
 
-  const translate = (text: string) => {
-    // Youtubeの自動翻訳を使えるので不要に
-    // const url = "https://mt-auto-minhon-mlt.ucri.jgn-x.jp"
-    // const key = "19c61daea69c34114464b373d74f2928064e94fd6"
-    // const secret = "62c50964289e1e289de36c243098641d"
-    // const name = "kyamada2001"
-    // const api_name = "mt"
-    // const api_param = "generalNT_en_ja"
-
-    // // みんなの翻訳APIにてoauthが必要になったらコメント解除
-    // // const getClientCredentials =  oauth.clientCredentials(
-    // //   axios.create(),
-    // //   url + '/oauth2/token.php',
-    // //   key,
-    // //   secret,
-    // // );
-    // // const auth: any = await getClientCredentials
-
-    // const response = axios.post(`${url}/api/?access_token=null&key=${key}&api_name=${api_name}&api_param=${api_param}&name=${name}&type=json&text=${text}`)
-    // .then((res: any) => {
-    //   const text = res.data.resultset.result.text
-    //   const convertedText = text.replace(/;/g, "\n").replace(/"/g, "");
-    //   setTranslatedCaption(convertedText)
-    // }).catch((err) => {
-    //   const stringJson: any = JSON.stringify(err)
-    //   // setVideoCaptionInfo(stringJson)
-    // })
-    // return response;
-  }
 
   const getCurrTranslateCaption = () => {
     const translated: any = captions[currCaptionIndex!].translate
@@ -369,7 +339,6 @@ function Video(props: videoProps): JSX.Element {
 
   const VideoCaptionModal = () => {
     if(!viewModal || !videoCaptionInfo) return;
-    const newlineStrings = videoCaptionInfo.split('/', 3);
     return (
       <Modal isVisible={viewModal}>
           <View style={styles.padding10}>
@@ -384,22 +353,15 @@ function Video(props: videoProps): JSX.Element {
                 </TouchableOpacity>
               </View>
               <View>
-                {
-                  newlineStrings.map((newlineString: any, index: any) => {
-                    return (
-                    <Text style={styles.dictionaryInfo}>
-                      {newlineString}
-                      {index < newlineStrings.length - 1 ? '\n' : null}
-                    </Text>
-                    )
-                  })
-                }
+                <Text style={styles.dictionaryInfo}>
+                  {videoCaptionInfo}
+                </Text>
               </View>
             </View>
             <View style={styles.overlayBody}>
-              <Text style={styles.originalWord}>現在の字幕</Text>
-              <Text style={styles.originalWord}>{translatedCaption ? translatedCaption : ''}</Text>
-              <Text style={styles.originalWord}>{translatedCaption ? captions[currCaptionIndex!].text : ''}</Text>
+              <Text style={styles.translateLabel}>現在の字幕</Text>
+              <Text style={{ color: '#bfdbfe', fontWeight: 'bold',}}>訳：{translatedCaption ? translatedCaption : ''}</Text>
+              <Text style={{ color: 'white', fontWeight: 'bold',}}>{translatedCaption ? captions[currCaptionIndex!].text : ''}</Text>
             </View>
             <View>
               <Text>{JSON.stringify(captionTexts ?? '')}</Text>
@@ -421,6 +383,12 @@ function Video(props: videoProps): JSX.Element {
             play={isVideoPlaying}
             videoId={videoId!}
             onChangeState={(e: any) => setVideoStatus(e)}
+            initialPlayerParams={{
+              preventFullScreen: true,
+              controls: true,
+              iv_load_policy: 3,
+              modestbranding: true
+            }}
             // onChangeState={}
           />
         </Pressable>
@@ -476,10 +444,10 @@ function Video(props: videoProps): JSX.Element {
                       }}>
                         {
                           translateIndex.includes(index) ?
-                            <Text style={{marginLeft: 5, color: '#3b82f6'}}>訳：{item.translate ? item.translate : '-'} </Text>
+                            <Text style={{fontSize: 13, marginRight: 5, marginLeft: 5, color: '#3b82f6'}}>訳：{item.translate ? item.translate : '-'}</Text>
                           : ''
                         }
-                        <Text style={styles.captionText} key={index}>{item.text}</Text>
+                        <Text style={styles.captionText} key={index}>{item.start}:{item.text}</Text>
                       </TouchableOpacity>
                     </View>
                   )
@@ -562,6 +530,7 @@ function Video(props: videoProps): JSX.Element {
     // fontSize: 18,
     // paddingVertical: 20
     marginLeft: 5,
+    marginRight: 5,
   },
   // Video字幕翻訳
   translateVideoCaption: {
@@ -590,11 +559,16 @@ function Video(props: videoProps): JSX.Element {
     flexDirection: 'row'
   },
   overlayBody: {
-    backgroundColor: 'rebeccapurple',
     width: '100%',
-    padding: 10
+    padding: 10,
+    backgroundColor: 'rebeccapurple'
   },
   originalWord: {
+    fontSize: 17,
+    fontWeight: 'bold',
+    color: 'gold',
+  },
+  translateLabel: {
     fontSize: 17,
     fontWeight: 'bold',
     color: 'gold',
@@ -628,7 +602,6 @@ function Video(props: videoProps): JSX.Element {
   padding10: {
     padding: 10
   },
-
   //inputUrlのStyle
   textInput: {
     height: 40,
