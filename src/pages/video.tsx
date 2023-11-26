@@ -61,12 +61,12 @@ function InputUrl({inputFunction}: ChildComponentProps): JSX.Element {
   const [url, setUrl] = useState<string>("")
   const [fetchedVideoId, setFetchedVideoId] = useState<string>("")
   const [messages, setMessages] = useState<Array<Message>>([])
-  const youtubeRegex = /(?:https?:\/\/)?(?:www\.)?youtube\.com\/watch\?v=([^&]+)/;
+  const youtubeRegex = /(?:https?:\/\/)?(?:www\.)?youtube\.com\/(watch\?v=([^&?/]+)|live\/([^&?/]+))/;
   // TODO:　URLをチェックする処理を追加
   const submitBtn = () => {
     const match: any = url.match(youtubeRegex);
     if (match) {
-      const extractedVideoId = match[1];
+      const extractedVideoId = match[2] || match[3];
       setFetchedVideoId(extractedVideoId);
       inputFunction(fetchedVideoId)
     } else {
