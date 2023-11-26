@@ -150,7 +150,6 @@ function Video(props: videoProps): JSX.Element {
   //字幕関係
   const [captions, setCaptions] = useState<any>([]);
   const [captionTexts, setCaptionTexts] = useState<any>()
-  const [translatedCaptions, setTranslatedCaptions] = useState([])
   const [currCaptionIndex, setCurrCaptionIndex] = useState<number | null>(null); // 字幕全体に対する配列のIndex
   const [currCaptions, setCurrCaptions] = useState(Array<Object>) // 現在再生している字幕情報
   const [currentTime, setCurrentTime] = useState<number | null>(null);
@@ -160,7 +159,6 @@ function Video(props: videoProps): JSX.Element {
   const [translateIndex, setTranslateIndex] = useState<any>([])
 
   //モーダル関係内容
-  const [translatedCaption, setTranslatedCaption] = useState<any>();
   const [sourceText, setSourceText] = useState<string | null>("environment") // ビデオ字幕の翻訳対象文字
   const [sourceTextId, setSourceTextId] = useState(null) // ビデオ字幕の翻訳
   const [videoCaptionInfo, setVideoCaptionInfo] = useState<any>()
@@ -169,9 +167,6 @@ function Video(props: videoProps): JSX.Element {
   
   // TODO: URL系は環境変数で管理する。
   const [googleTranslateUrl, setGoogleTranslateUrl] = useState("https://script.google.com/macros/s/AKfycbyNX-jodYhhZESYMQ9hzDxtzRgs_y4nWgGGFGNB1A8rR_Y9Kn1w1djVZtv1pGKAvA4f/exec")
-
-  
-  
   // const [charCaption, setCharCaption] = useState(Array<Array<String>>) この機能の実装はまだ先
 
   useEffect(() => {
@@ -265,8 +260,6 @@ function Video(props: videoProps): JSX.Element {
   const hiddenTranslate = () => {
     setSourceText(null)
     setVideoCaptionInfo(null)
-    setTranslatedCaption(null)
-    // setsourceTextId(null)
     setViewModal(false)
     setVideoStatus('playing')
   }
@@ -288,10 +281,6 @@ function Video(props: videoProps): JSX.Element {
   }
 
 
-  const getCurrTranslateCaption = () => {
-    const translated: any = captions[currCaptionIndex!].translate
-    setTranslatedCaption(translated);
-  }
 
   const pressVideoCaption = (captionText: any) => {
     hiddenTranslate();
@@ -299,7 +288,6 @@ function Video(props: videoProps): JSX.Element {
     setVideoStatus("paused") // これが原因。これなければ、useEffectで修正する必要なし
     setSourceText(captionText)
     textDictional(captionText) //.then((dictionaryText) => setVideoCaptionInfo(dictionaryText))
-    getCurrTranslateCaption() // 表示されている字幕のIndexを渡し、字幕をセットする
     // 全ての処理が終わってからモーダル表示する
     setViewModal(true)
     setTimeout(() => {
@@ -364,8 +352,8 @@ function Video(props: videoProps): JSX.Element {
             </View>
             <View style={styles.overlayBody}>
               <Text style={styles.translateLabel}>現在の字幕</Text>
-              <Text style={{ color: '#bfdbfe', fontWeight: 'bold',}}>訳：{translatedCaption ? translatedCaption : ''}</Text>
-              <Text style={{ color: 'white', fontWeight: 'bold',}}>{translatedCaption ? captions[currCaptionIndex!].text : ''}</Text>
+              <Text style={{ color: '#bfdbfe', fontWeight: 'bold',}}>訳：{captions[currCaptionIndex!].translate ? captions[currCaptionIndex!].translate : ''}</Text>
+              <Text style={{ color: 'white', fontWeight: 'bold',}}>{captions[currCaptionIndex!].text ? captions[currCaptionIndex!].text : ''}</Text>
             </View>
             <View>
               <Text>{JSON.stringify(captionTexts ?? '')}</Text>
@@ -451,7 +439,7 @@ function Video(props: videoProps): JSX.Element {
                             <Text style={{fontSize: 13, marginRight: 5, marginLeft: 5, color: '#3b82f6'}}>訳：{item.translate ? item.translate : '-'}</Text>
                           : ''
                         }
-                        <Text style={styles.captionText} key={index}>{item.start}:{item.text}</Text>
+                        <Text style={styles.captionText} key={index}>{item.text}</Text>
                       </TouchableOpacity>
                     </View>
                   )
