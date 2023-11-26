@@ -176,20 +176,24 @@ function Video(props: videoProps): JSX.Element {
 
   useEffect(() => {
     const fetchYoutubecaptions = async () => {
-      const response = await fetch('http://localhost:9000/2015-03-31/functions/function/invocations', {
+      await fetch('https://uqysdmlg6kbmdjhd437mtmcwbi0obaso.lambda-url.ap-northeast-1.on.aws', {
+      // const response = await fetch('https://ra6dyoi3q3.execute-api.ap-northeast-1.amazonaws.com/v1/function', {
         method: 'POST',
         headers: {
+          'Accept': 'application/json',
           'Content-Type': 'application/json',
+          'Accept-Language': 'ru,en;q=0.9',
         },
         body: JSON.stringify({
           videoId: videoId
         }),
+      })
+      .then(response => response.json())
+      .then((responseJson: any) => {
+        const data = responseJson//.body;
+        setCaptions(JSON.parse(data.caption));
       });
-      const data = await response.json().then((data) => {
-        return JSON.parse(data.body);
-      });
-      setCaptions(JSON.parse(data.caption));
-      setTranslatedCaptions(JSON.parse(data.translate_caption))
+      // setTranslatedCaptions(JSON.parse(data.translate_caption))
     }
 
     fetchYoutubecaptions();
