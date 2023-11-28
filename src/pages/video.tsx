@@ -222,7 +222,7 @@ function Video(props: videoProps): JSX.Element {
 
   useEffect(() => { // 動くか検証必要
     scrollCaptionView(true)
-  }, [currCaptionIndex])
+  }, [currCaptionIndex,isCaptionCenter])
 
   function splitCaptionText(subtitle: YoutubeCaption) {
     const splitTexts = subtitle.text.split(" ");
@@ -455,7 +455,6 @@ function Video(props: videoProps): JSX.Element {
             <TouchableWithoutFeedback
             onPress={() => {
               setIsCaptionCenter(true)
-              scrollCaptionView(false)
             }}
             >
               <Icon name='unsorted' size={30} color={'#3b82f6'}/>
