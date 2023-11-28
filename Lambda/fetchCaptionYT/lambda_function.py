@@ -38,6 +38,7 @@ def lambda_handler(event, context):
                     tmp_translate_sec = [translate['text'].replace(' ', '') for translate in filtered_translates]
                 tmp_translate += ''.join(tmp_translate_sec)
                 captions[0][index]['translate'] = ''.join(tmp_translate)
+                captions[0][index]['duration'] = (float(captions[0][index+1]['start']) - float(captions[0][index]['start']) - float(captions[0][index]['duration'])) + float(captions[0][index]['duration']) + float(captions[0][index+1]['duration']) #正しい時間まで表示されるようdurationを設定
                 tmp_caption.append(captions[0][index])
 
     return {
