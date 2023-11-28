@@ -31,6 +31,14 @@ def lambda_handler(event, context):
             tmp_translate += ''.join(tmp_translate_sec)
             captions[0][index]['translate'] = ''.join(tmp_translate)
             tmp_caption.append(captions[0][index])
+            if index < len(captions[0])-1:
+                tmp_translate_sec = [translate['text'].replace(' ', '') for translate in translates[0] if translate['start'] == captions[0][index+1]['start']]
+                if not tmp_translate_sec:
+                    filtered_translates = filter(lambda translate: float(translate['start']) <= float(captions[0][index+1]['start']) <= float(translate['start']) + float(translate['duration']), translates[0])
+                    tmp_translate_sec = [translate['text'].replace(' ', '') for translate in filtered_translates]
+                tmp_translate += ''.join(tmp_translate_sec)
+                captions[0][index]['translate'] = ''.join(tmp_translate)
+                tmp_caption.append(captions[0][index])
 
     return {
         "statusCode": 200,
