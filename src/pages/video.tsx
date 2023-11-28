@@ -61,16 +61,15 @@ function InputUrl({inputFunction}: ChildComponentProps): JSX.Element {
   const [url, setUrl] = useState<string>("")
   const [fetchedVideoId, setFetchedVideoId] = useState<string>("")
   const [messages, setMessages] = useState<Array<Message>>([])
-  const youtubeRegex = /(?:https?:\/\/)?(?:www\.)?youtube\.com\/(watch\?v=([^&?/]+)|live\/([^&?/]+))/;
+  const youtubeRegex = /(?:https?:\/\/)?(?:www\.)?(youtube\.com|youtu\.be)\/(watch\?v=([^&?/]+)|.+\/([^&?/]+))/;
   // TODO:　URLをチェックする処理を追加
   const submitBtn = () => {
     const match: any = url.match(youtubeRegex);
     if (match) {
-      const extractedVideoId = match[2] || match[3];
+      const extractedVideoId = match[3] || match[4];
       setFetchedVideoId(extractedVideoId);
       inputFunction(fetchedVideoId)
     } else {
-      // Alert.alert('エラー', '有効なYouTubeのURLを入力してください');
       const newMessage: Message = {
         code: errorCode,
         text: 'URLが正しくありません。'
