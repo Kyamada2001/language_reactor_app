@@ -268,31 +268,32 @@ function Video(props: videoProps): JSX.Element {
 
     axios.get(url).then((response: any) => {
       const data = response.data.data
-      if(!data) setVideoCaptionInfo('-')
-      else {
-    
+      if(data.length > 0) {
         const dictionary: string = data.filter((item: any, index: number) => index < 3)
         .map((item: any) => item.slug)
         .join(',');
         setVideoCaptionInfo(dictionary)
+      }
+      else {
+        setVideoCaptionInfo('-')
       }
     })
   }
 
 
 
-  const pressVideoCaption = (captionText: any) => {
+  const pressVideoCaption = async (captionText: any) => {
     hiddenTranslate();
-    // text指定する際、caption.textと指定する必要がある。
-    setVideoStatus("paused") // これが原因。これなければ、useEffectで修正する必要なし
     setSourceText(captionText)
-    textDictional(captionText) //.then((dictionaryText) => setVideoCaptionInfo(dictionaryText))
-    // 全ての処理が終わってからモーダル表示する
+    // text指定する際、caption.textと指定する必要がある。
+    textDictional(captionText)
     setViewModal(true)
+    // 全ての処理が終わってからモーダル表示する
     setTimeout(() => {
       speachText(captionText)
     }, 500);
   }
+  
 
   // Youtube動画下の字幕を押下した際のイベント
   const youtubePlayback = (time: number) => {
