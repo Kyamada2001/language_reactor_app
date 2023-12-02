@@ -89,6 +89,7 @@ function InputUrl({inputFunction}: ChildComponentProps): JSX.Element {
             onChangeText={(text) => setUrl(text)}
             value={url}
           />
+          <Text style={styles.labelText}>※ライブ中の動画は不可</Text>    
         </View>
         <Pressable
           style={[styles.submitBtn]} 
@@ -147,6 +148,7 @@ function Video(props: videoProps): JSX.Element {
   const captionViewBeforeSec = 1; // 字幕を取得する処理を考慮し、事前に処理開始秒数を早める時間。端末のスペックも影響あるので、調整必要
 
   //字幕関係
+  const [isHaveCaption, setIsHaveCaption] = useState<boolean>(true)
   const [captions, setCaptions] = useState<any>([]);
   const [captionTexts, setCaptionTexts] = useState<any>()
   const [currCaptionIndex, setCurrCaptionIndex] = useState<number | null>(null); // 字幕全体に対する配列のIndex
@@ -186,6 +188,11 @@ function Video(props: videoProps): JSX.Element {
       .then((responseJson: any) => {
         const data = responseJson//.body;
         setCaptions(JSON.parse(data.caption));
+        if(data.statusCode == "200") {
+          setIsHaveCaption(true)
+          setCaptions(JSON.parse(data.caption));
+        }
+        else setIsHaveCaption(false)
       });
       // setTranslatedCaptions(JSON.parse(data.translate_caption))
     }
@@ -446,6 +453,45 @@ function Video(props: videoProps): JSX.Element {
                 }}
               ></FlatList>
               : <Text>字幕を表示中です。</Text>
+              isHaveCaption ?
+              (
+                captions.length > 0 ?
+                <FlatList
+                  ref={captionScrollViewRef}
+                  data={captions}
+                  keyExtractor={(item) => item.id}
+                  getItemLayout={(data, index) => (
+                    {length: CAPTION_HEIGHT, offset: CAPTION_HEIGHT * index, index}
+                  )}
+                  renderItem={({item,index}) => {
+                    return (
+                      <View 
+                        style={styles.captions}
+                      >
+                        <TouchableOpacity style={styles.playbackIcon} onPress={() => youtubePlayback(parseFloat(item.start))}>
+                          <Icon 
+                            name='volume-up'
+                            size={20}
+                            color={currCaptionIndex === index ? '#3b82f6' : '#0a0a0a'}
+                          />
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => {
+                          if(translateIndex.includes(index)) setTranslateIndex((prev: any) => [...prev.filter((item: any) => item != index)])
+                          else setTranslateIndex((prev: any) => [...prev, index])
+                        }}>
+                          {
+                            translateIndex.includes(index) ?
+                              <Text style={{fontSize: 13, marginRight: 5, marginLeft: 5, color: '#3b82f6'}}>訳：{item.translate ? item.translate : '-'}</Text>
+                            : ''
+                          }
+                          <Text style={styles.captionText} key={index}>{item.text}</Text>
+                        </TouchableOpacity>
+                      </View>
+                    )
+                  }}
+                ></FlatList>
+                : <Text>字幕を表示中です。</Text>
+              ) : <Text>Youtubeに字幕データがありません</Text>
             }
           </TouchableWithoutFeedback>
         </View>
