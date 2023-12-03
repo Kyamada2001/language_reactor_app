@@ -172,7 +172,8 @@ function Video(props: videoProps): JSX.Element {
 
   useEffect(() => {
     const fetchYoutubecaptions = async () => {
-      await fetch('https://uqysdmlg6kbmdjhd437mtmcwbi0obaso.lambda-url.ap-northeast-1.on.aws', {
+      // await fetch('https://uqysdmlg6kbmdjhd437mtmcwbi0obaso.lambda-url.ap-northeast-1.on.aws', {
+      await fetch('http://localhost:9000/2015-03-31/functions/function/invocations', {
       // const response = await fetch('https://ra6dyoi3q3.execute-api.ap-northeast-1.amazonaws.com/v1/function', {
         method: 'POST',
         headers: {
@@ -186,7 +187,8 @@ function Video(props: videoProps): JSX.Element {
       })
       .then(response => response.json())
       .then((responseJson: any) => {
-        const data = responseJson//.body;
+        // const data = responseJson//.body;本番
+        const data = JSON.parse(responseJson.body);
         if(data.statusCode == "200") {
           setIsHaveCaption(true)
           setCaptions(JSON.parse(data.caption));
