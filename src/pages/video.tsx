@@ -145,7 +145,7 @@ function Video(props: videoProps): JSX.Element {
   const [viewModal, setViewModal] = useState(false) //モーダル開閉
   const [isCaptionCenter, setIsCaptionCenter] = useState<boolean>(true)
   const [isVideoPlaying, setIsVideoPlaying] = useState<boolean>(true)
-  const captionViewBeforeSec = 1; // 字幕を取得する処理を考慮し、事前に処理開始秒数を早める時間。端末のスペックも影響あるので、調整必要
+  const captionViewBeforeSec = 0.5; // 字幕を取得する処理を考慮し、事前に処理開始秒数を早める時間。端末のスペックも影響あるので、調整必要
 
   //字幕関係
   const [isHaveCaption, setIsHaveCaption] = useState<boolean>(true)
@@ -187,7 +187,6 @@ function Video(props: videoProps): JSX.Element {
       .then(response => response.json())
       .then((responseJson: any) => {
         const data = responseJson//.body;
-        setCaptions(JSON.parse(data.caption));
         if(data.statusCode == "200") {
           setIsHaveCaption(true)
           setCaptions(JSON.parse(data.caption));
@@ -198,7 +197,7 @@ function Video(props: videoProps): JSX.Element {
     }
 
     fetchYoutubecaptions();
-    Tts.setDefaultLanguage('en-US');
+    Tts.setDefaultVoice('com.apple.ttsbundle.Samantha-compact');
     const timer = setInterval(async () => {
       const newTime: any = await playerRef.current?.getCurrentTime();
       if (newTime != currentTime) {
@@ -296,9 +295,6 @@ function Video(props: videoProps): JSX.Element {
     textDictional(captionText)
     setViewModal(true)
     // 全ての処理が終わってからモーダル表示する
-    setTimeout(() => {
-      speachText(captionText)
-    }, 500);
   }
   
 
@@ -319,17 +315,17 @@ function Video(props: videoProps): JSX.Element {
 
   const scrollCaptionView = (animated: boolean) => {
     if(isCaptionCenter && currCaptionIndex){
-    // 真ん中に来るように調整
-    const ajustNumber = 2;
-    const scrollIndex = currCaptionIndex - ajustNumber;
-    captionScrollViewRef?.current?.scrollToIndex({
-      index: scrollIndex >= 0 ? scrollIndex : currCaptionIndex,
-      viewPosition: 0,
-      animated: animated,
-    })
-  }else {
-    return ;
-  }
+      // 真ん中に来るように調整
+      const ajustNumber = 2; // 例）上から2番目のflatListにスクロールしたい場合、2を設定
+      const scrollIndex = currCaptionIndex - ajustNumber;
+      captionScrollViewRef?.current?.scrollToIndex({
+        index: scrollIndex >= 0 ? scrollIndex : currCaptionIndex,
+        viewPosition: 0,
+        animated: animated,
+      })
+    }else {
+      return ;
+    }
   }
 
   const speachText = (text: string) => {
@@ -339,7 +335,11 @@ function Video(props: videoProps): JSX.Element {
   const VideoCaptionModal = () => {
     if(!viewModal || !videoCaptionInfo) return;
     return (
-      <Modal isVisible={viewModal}>
+      <Modal 
+       isVisible={viewModal}
+      onModalWillShow={()=>{setVideoStatus("paused")}}
+      onModalShow={() => speachText(sourceText!)}
+       >
           <View style={styles.padding10}>
             <TouchableOpacity onPress={hiddenTranslate} style={styles.modalCloseBtn}>
               <Icon name='close' size={20}/>
@@ -417,42 +417,6 @@ function Video(props: videoProps): JSX.Element {
         <View>
           <TouchableWithoutFeedback onPressIn={()=> setIsCaptionCenter(false)}>
             {
-              captions.length > 0 ?
-              <FlatList
-                ref={captionScrollViewRef}
-                data={captions}
-                keyExtractor={(item) => item.id}
-                getItemLayout={(data, index) => (
-                  {length: CAPTION_HEIGHT, offset: CAPTION_HEIGHT * index, index}
-                )}
-                renderItem={({item,index}) => {
-                  return (
-                    <View 
-                      style={styles.captions}
-                    >
-                      <TouchableOpacity style={styles.playbackIcon} onPress={() => youtubePlayback(parseFloat(item.start))}>
-                        <Icon 
-                          name='volume-up'
-                          size={20}
-                          color={currCaptionIndex === index ? '#3b82f6' : '#0a0a0a'}
-                        />
-                      </TouchableOpacity>
-                      <TouchableOpacity onPress={() => {
-                        if(translateIndex.includes(index)) setTranslateIndex((prev: any) => [...prev.filter((item: any) => item != index)])
-                        else setTranslateIndex((prev: any) => [...prev, index])
-                      }}>
-                        {
-                          translateIndex.includes(index) ?
-                            <Text style={{fontSize: 13, marginRight: 5, marginLeft: 5, color: '#3b82f6'}}>訳：{item.translate ? item.translate : '-'}</Text>
-                          : ''
-                        }
-                        <Text style={styles.captionText} key={index}>{item.text}</Text>
-                      </TouchableOpacity>
-                    </View>
-                  )
-                }}
-              ></FlatList>
-              : <Text>字幕を表示中です。</Text>
               isHaveCaption ?
               (
                 captions.length > 0 ?
