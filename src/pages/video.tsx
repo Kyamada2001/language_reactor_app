@@ -172,9 +172,7 @@ function Video(props: videoProps): JSX.Element {
 
   useEffect(() => {
     const fetchYoutubecaptions = async () => {
-      // await fetch('https://uqysdmlg6kbmdjhd437mtmcwbi0obaso.lambda-url.ap-northeast-1.on.aws', {
-      await fetch('http://localhost:9000/2015-03-31/functions/function/invocations', {
-      // const response = await fetch('https://ra6dyoi3q3.execute-api.ap-northeast-1.amazonaws.com/v1/function', {
+      await fetch('https://uqysdmlg6kbmdjhd437mtmcwbi0obaso.lambda-url.ap-northeast-1.on.aws', {
         method: 'POST',
         headers: {
           'Accept': 'application/json',

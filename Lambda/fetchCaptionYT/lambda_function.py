@@ -5,9 +5,8 @@ import time
 def lambda_handler(event, context):
     print(event)
     try:
-        # params = json.loads( event['body'] )#本番Lambda用
-        # videoId = params['videoId']#本番Lambda用
-        videoId = event['videoId'] #ローカル用
+        params = json.loads( event['body'] )#本番Lambda用
+        videoId = params['videoId']#本番Lambda用
         transcript_list = YouTubeTranscriptApi.list_transcripts(videoId)
         captions = []
         translates = []
