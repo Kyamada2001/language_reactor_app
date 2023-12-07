@@ -144,7 +144,6 @@ function Video(props: videoProps): JSX.Element {
   const [videoStatus, setVideoStatus] = useState<string>("") // ビデオ開始停止
   const [viewModal, setViewModal] = useState(false) //モーダル開閉
   const [isCaptionCenter, setIsCaptionCenter] = useState<boolean>(true)
-  const [isVideoPlaying, setIsVideoPlaying] = useState<boolean>(true)
   const captionViewBeforeSec = 0.5; // 字幕を取得する処理を考慮し、事前に処理開始秒数を早める時間。端末のスペックも影響あるので、調整必要
 
   //字幕関係
@@ -210,22 +209,22 @@ function Video(props: videoProps): JSX.Element {
 
   useEffect(() => {
     // モーダルが開かれていない場合、字幕が表示されていない場合、次の字幕時間になった場合に字幕を取得
-    if(isVideoPlaying && !viewModal) {
+    if(isVideoPlaying() && !viewModal) {
       getCurrCaption();
     }
   }, [currentTime])
 
   // TODo:ここ修正する必要ないかも。一旦修正見送りで
-  useEffect(() => {
+  const isVideoPlaying = () => {
     if(videoStatus == 'playing' 
     || videoStatus == 'buffering' 
     || videoStatus == 'unstarted'
     || (videoStatus == 'paused' && !viewModal)) {
-      setIsVideoPlaying(true)
+      return true
     } else {
-      setIsVideoPlaying(false)
+      return false
     }
-  }, [videoStatus])
+  }
 
   useEffect(() => { // 動くか検証必要
     scrollCaptionView(true)
@@ -271,9 +270,11 @@ function Video(props: videoProps): JSX.Element {
     setVideoStatus('playing')
   }
 
-  const textDictional = (text: string) => {
-    const url = `https://jisho.org/api/v1/search/words?keyword="${text}"`
+  const pressVideoCaption = async (captionText: any) => {
+    hiddenTranslate();
 
+    // 和訳を取得しつつ、処理が完了後に
+    const url = `https://jisho.org/api/v1/search/words?keyword="${captionText}"`
     axios.get(url).then((response: any) => {
       const data = response.data.data
       if(data.length > 0) {
@@ -285,18 +286,10 @@ function Video(props: videoProps): JSX.Element {
       else {
         setVideoCaptionInfo('-')
       }
+      speachText(captionText)
     })
-  }
-
-
-
-  const pressVideoCaption = async (captionText: any) => {
-    hiddenTranslate();
     setSourceText(captionText)
-    // text指定する際、caption.textと指定する必要がある。
-    textDictional(captionText)
     setViewModal(true)
-    // 全ての処理が終わってからモーダル表示する
   }
   
 
@@ -338,9 +331,11 @@ function Video(props: videoProps): JSX.Element {
     if(!viewModal || !videoCaptionInfo) return;
     return (
       <Modal 
-       isVisible={viewModal}
-      onModalWillShow={()=>{setVideoStatus("paused")}}
-      onModalShow={() => speachText(sourceText!)}
+        isVisible={viewModal}
+        onModalWillShow={()=>{
+          setVideoStatus("paused")
+        }}
+        animationIn={"fadeIn"}
        >
           <View style={styles.padding10}>
             <TouchableOpacity onPress={hiddenTranslate} style={styles.modalCloseBtn}>
@@ -381,7 +376,7 @@ function Video(props: videoProps): JSX.Element {
           <YoutubePlayer
             ref={playerRef}
             height={youtubeHeight}
-            play={isVideoPlaying}
+            play={isVideoPlaying()}
             videoId={videoId!}
             onChangeState={(e: any) => setVideoStatus(e)}
             initialPlayerParams={{
