@@ -5,7 +5,7 @@
  * @format
  */
 
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button, Dimensions, TouchableOpacity } from 'react-native';
 import YoutubePlayer from "react-native-youtube-iframe";
 import Modal from "react-native-modal";
@@ -358,9 +358,6 @@ function Video(props: videoProps): JSX.Element {
               <Text style={styles.translateLabel}>現在の字幕</Text>
               <Text style={{ color: '#bfdbfe', fontWeight: 'bold',}}>訳：{captions[currCaptionIndex!].translate ? captions[currCaptionIndex!].translate : ''}</Text>
               <Text style={{ color: 'white', fontWeight: 'bold',}}>{captions[currCaptionIndex!].text ? captions[currCaptionIndex!].text : ''}</Text>
-            </View>
-            <View>
-              <Text>{JSON.stringify(captionTexts ?? '')}</Text>
             </View>
           </View>
         </Modal>
