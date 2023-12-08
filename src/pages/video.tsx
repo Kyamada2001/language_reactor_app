@@ -271,11 +271,9 @@ function Video(props: videoProps): JSX.Element {
   }
 
   const pressVideoCaption = async (captionText: any) => {
-    hiddenTranslate();
-
     // 和訳を取得しつつ、処理が完了後に
     const url = `https://jisho.org/api/v1/search/words?keyword="${captionText}"`
-    axios.get(url).then((response: any) => {
+    await axios.get(url).then((response: any) => {
       const data = response.data.data
       if(data.length > 0) {
         const dictionary: string = data.filter((item: any, index: number) => index < 3)
@@ -336,6 +334,7 @@ function Video(props: videoProps): JSX.Element {
           setVideoStatus("paused")
         }}
         animationIn={"fadeIn"}
+        animationInTiming={0.1}
        >
           <View style={styles.padding10}>
             <TouchableOpacity onPress={hiddenTranslate} style={styles.modalCloseBtn}>
