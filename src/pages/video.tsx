@@ -141,7 +141,7 @@ function Video(props: videoProps): JSX.Element {
   paused	一時停止
   ended 再生終了
   */
-  const [videoStatus, setVideoStatus] = useState<string>("") // ビデオ開始停止
+  const videoStatusRef = useRef<string>() // ビデオ開始停止
   const [viewModal, setViewModal] = useState(false) //モーダル開閉
   const [isCaptionCenter, setIsCaptionCenter] = useState<boolean>(true)
   const captionViewBeforeSec = 0.5; // 字幕を取得する処理を考慮し、事前に処理開始秒数を早める時間。端末のスペックも影響あるので、調整必要
@@ -216,10 +216,10 @@ function Video(props: videoProps): JSX.Element {
 
   // TODo:ここ修正する必要ないかも。一旦修正見送りで
   const isVideoPlaying = () => {
-    if(videoStatus == 'playing' 
-    || videoStatus == 'buffering' 
-    || videoStatus == 'unstarted'
-    || (videoStatus == 'paused' && !viewModal)) {
+    if(videoStatusRef.current == 'playing' 
+    || videoStatusRef.current == 'buffering' 
+    || videoStatusRef.current == 'unstarted'
+    || (videoStatusRef.current == 'paused' && !viewModal)) {
       return true
     } else {
       return false
@@ -267,7 +267,8 @@ function Video(props: videoProps): JSX.Element {
     setSourceText(null)
     setVideoCaptionInfo(null)
     setViewModal(false)
-    setVideoStatus('playing')
+    
+    videoStatusRef.current = 'playing'
   }
 
   const pressVideoCaption = async (captionText: any) => {
@@ -331,7 +332,7 @@ function Video(props: videoProps): JSX.Element {
       <Modal 
         isVisible={viewModal}
         onModalWillShow={()=>{
-          setVideoStatus("paused")
+          videoStatusRef.current = 'paused'
         }}
         animationIn={"fadeIn"}
         animationInTiming={0.1}
@@ -374,7 +375,7 @@ function Video(props: videoProps): JSX.Element {
             height={youtubeHeight}
             play={isVideoPlaying()}
             videoId={videoId!}
-            onChangeState={(e: any) => setVideoStatus(e)}
+            onChangeState={(e: any) => videoStatusRef.current = e}
             initialPlayerParams={{
               preventFullScreen: true,
               controls: true,
@@ -384,7 +385,7 @@ function Video(props: videoProps): JSX.Element {
             // onChangeState={}
           />
         </Pressable>
-        <View style={[styles.overlay, pressedVideo || videoStatus == 'paused' ? styles.overlayPress : styles.overlayNotPress]}>
+        <View style={[styles.overlay, pressedVideo || videoStatusRef.current == 'paused' ? styles.overlayPress : styles.overlayNotPress]}>
           {
             currCaptions ?
               <>
