@@ -218,8 +218,7 @@ function Video(props: videoProps): JSX.Element {
   const isVideoPlaying = () => {
     if(videoStatusRef.current == 'playing' 
     || videoStatusRef.current == 'buffering' 
-    || videoStatusRef.current == 'unstarted'
-    || (videoStatusRef.current == 'paused' && !isViewModalRef.current)) {
+    || videoStatusRef.current == 'unstarted') {
       return true
     } else {
       return false
@@ -287,6 +286,7 @@ function Video(props: videoProps): JSX.Element {
       }
       speachText(captionText)
     })
+    videoStatusRef.current = 'paused'
     setSourceText(captionText)
     isViewModalRef.current = true
   }
@@ -331,9 +331,6 @@ function Video(props: videoProps): JSX.Element {
     return (
       <Modal 
         isVisible={isViewModalRef.current}
-        onModalWillShow={()=>{
-          videoStatusRef.current = 'paused'
-        }}
         animationIn={"fadeIn"}
         animationInTiming={0.1}
        >
