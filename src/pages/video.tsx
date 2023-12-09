@@ -142,7 +142,7 @@ function Video(props: videoProps): JSX.Element {
   ended 再生終了
   */
   const videoStatusRef = useRef<string>() // ビデオ開始停止
-  const [viewModal, setViewModal] = useState(false) //モーダル開閉
+  const isViewModalRef = useRef<boolean>(false) //モーダル開閉
   const [isCaptionCenter, setIsCaptionCenter] = useState<boolean>(true)
   const captionViewBeforeSec = 0.5; // 字幕を取得する処理を考慮し、事前に処理開始秒数を早める時間。端末のスペックも影響あるので、調整必要
 
@@ -209,7 +209,7 @@ function Video(props: videoProps): JSX.Element {
 
   useEffect(() => {
     // モーダルが開かれていない場合、字幕が表示されていない場合、次の字幕時間になった場合に字幕を取得
-    if(isVideoPlaying() && !viewModal) {
+    if(isVideoPlaying() && !isViewModalRef.current) {
       getCurrCaption();
     }
   }, [currentTime])
@@ -219,7 +219,7 @@ function Video(props: videoProps): JSX.Element {
     if(videoStatusRef.current == 'playing' 
     || videoStatusRef.current == 'buffering' 
     || videoStatusRef.current == 'unstarted'
-    || (videoStatusRef.current == 'paused' && !viewModal)) {
+    || (videoStatusRef.current == 'paused' && !isViewModalRef.current)) {
       return true
     } else {
       return false
@@ -266,7 +266,7 @@ function Video(props: videoProps): JSX.Element {
   const hiddenTranslate = () => {
     setSourceText(null)
     setVideoCaptionInfo(null)
-    setViewModal(false)
+    isViewModalRef.current = false
     
     videoStatusRef.current = 'playing'
   }
@@ -288,7 +288,7 @@ function Video(props: videoProps): JSX.Element {
       speachText(captionText)
     })
     setSourceText(captionText)
-    setViewModal(true)
+    isViewModalRef.current = true
   }
   
 
@@ -327,10 +327,10 @@ function Video(props: videoProps): JSX.Element {
   }
 
   const VideoCaptionModal = () => {
-    if(!viewModal || !videoCaptionInfo) return;
+    if(!isViewModalRef.current || !videoCaptionInfo) return;
     return (
       <Modal 
-        isVisible={viewModal}
+        isVisible={isViewModalRef.current}
         onModalWillShow={()=>{
           videoStatusRef.current = 'paused'
         }}
