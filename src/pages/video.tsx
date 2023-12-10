@@ -141,8 +141,8 @@ function Video(props: videoProps): JSX.Element {
   paused	一時停止
   ended 再生終了
   */
-  const [videoStatus, setVideoStatus] = useState<string>("") // ビデオ開始停止
-  const [viewModal, setViewModal] = useState(false) //モーダル開閉
+  const videoStatusRef = useRef<string>() // ビデオ開始停止
+  const isViewModalRef = useRef<boolean>(false) //モーダル開閉
   const [isCaptionCenter, setIsCaptionCenter] = useState<boolean>(true)
   const captionViewBeforeSec = 0.5; // 字幕を取得する処理を考慮し、事前に処理開始秒数を早める時間。端末のスペックも影響あるので、調整必要
 
@@ -207,17 +207,16 @@ function Video(props: videoProps): JSX.Element {
 
   useEffect(() => {
     // モーダルが開かれていない場合、字幕が表示されていない場合、次の字幕時間になった場合に字幕を取得
-    if(isVideoPlaying() && !viewModal) {
+    if(isVideoPlaying() && !isViewModalRef.current) {
       getCurrCaption();
     }
   }, [currentTime])
 
   // TODo:ここ修正する必要ないかも。一旦修正見送りで
   const isVideoPlaying = () => {
-    if(videoStatus == 'playing' 
-    || videoStatus == 'buffering' 
-    || videoStatus == 'unstarted'
-    || (videoStatus == 'paused' && !viewModal)) {
+    if(videoStatusRef.current == 'playing' 
+    || videoStatusRef.current == 'buffering' 
+    || videoStatusRef.current == 'unstarted') {
       return true
     } else {
       return false
@@ -264,13 +263,13 @@ function Video(props: videoProps): JSX.Element {
   const hiddenTranslate = () => {
     setSourceText(null)
     setVideoCaptionInfo(null)
-    setViewModal(false)
-    setVideoStatus('playing')
+    isViewModalRef.current = false
+    
+    videoStatusRef.current = 'playing'
   }
 
-  const pressVideoCaption = async (captionText: any) => {
-    hiddenTranslate();
-
+  const pressVideoCaption = (captionText: any) => {
+    videoStatusRef.current = 'paused'
     // 和訳を取得しつつ、処理が完了後に
     const url = `https://jisho.org/api/v1/search/words?keyword="${captionText}"`
     axios.get(url).then((response: any) => {
@@ -287,7 +286,7 @@ function Video(props: videoProps): JSX.Element {
       speachText(captionText)
     })
     setSourceText(captionText)
-    setViewModal(true)
+    isViewModalRef.current = true
   }
   
 
@@ -326,14 +325,12 @@ function Video(props: videoProps): JSX.Element {
   }
 
   const VideoCaptionModal = () => {
-    if(!viewModal || !videoCaptionInfo) return;
+    if(!isViewModalRef.current || !videoCaptionInfo) return;
     return (
       <Modal 
-        isVisible={viewModal}
-        onModalWillShow={()=>{
-          setVideoStatus("paused")
-        }}
+        isVisible={isViewModalRef.current}
         animationIn={"fadeIn"}
+        animationInTiming={0.1}
        >
           <View style={styles.padding10}>
             <TouchableOpacity onPress={hiddenTranslate} style={styles.modalCloseBtn}>
@@ -373,7 +370,7 @@ function Video(props: videoProps): JSX.Element {
             height={youtubeHeight}
             play={isVideoPlaying()}
             videoId={videoId!}
-            onChangeState={(e: any) => setVideoStatus(e)}
+            onChangeState={(e: any) => videoStatusRef.current = e}
             initialPlayerParams={{
               preventFullScreen: true,
               controls: true,
@@ -383,7 +380,7 @@ function Video(props: videoProps): JSX.Element {
             // onChangeState={}
           />
         </Pressable>
-        <View style={[styles.overlay, pressedVideo || videoStatus == 'paused' ? styles.overlayPress : styles.overlayNotPress]}>
+        <View style={[styles.overlay, pressedVideo || videoStatusRef.current == 'paused' ? styles.overlayPress : styles.overlayNotPress]}>
           {
             currCaptions ?
               <>
