@@ -270,10 +270,11 @@ function Video(props: videoProps): JSX.Element {
     videoStatusRef.current = 'playing'
   }
 
-  const pressVideoCaption = async (captionText: any) => {
+  const pressVideoCaption = (captionText: any) => {
+    videoStatusRef.current = 'paused'
     // 和訳を取得しつつ、処理が完了後に
     const url = `https://jisho.org/api/v1/search/words?keyword="${captionText}"`
-    await axios.get(url).then((response: any) => {
+    axios.get(url).then((response: any) => {
       const data = response.data.data
       if(data.length > 0) {
         const dictionary: string = data.filter((item: any, index: number) => index < 3)
@@ -286,7 +287,6 @@ function Video(props: videoProps): JSX.Element {
       }
       speachText(captionText)
     })
-    videoStatusRef.current = 'paused'
     setSourceText(captionText)
     isViewModalRef.current = true
   }
