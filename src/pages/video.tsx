@@ -36,6 +36,8 @@ import oauth from 'axios-oauth-client'
 import { Float } from 'react-native/Libraries/Types/CodegenTypes';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import Tts from 'react-native-tts';
+import { storage } from '../storage';
+
 //TODO: こっちの方がライブラリとして優秀かも
 // import { Modalize } from 'react-native-modalize';
 
@@ -58,9 +60,17 @@ function InputUrl({inputFunction}: ChildComponentProps): JSX.Element {
     code: number, // errorかprimary
     text: string,
   }
+  // const wordBook: Array<string> | any = storage
+  // .load({key: "wordBook"})
+  // .then(data => {
+  //   console.log(data);
+  // })
+  // .catch(err => console.warn(err))
+
   const [url, setUrl] = useState<string>("")
   const [fetchedVideoId, setFetchedVideoId] = useState<string>("")
   const [messages, setMessages] = useState<Array<Message>>([])
+  // const [wordbook, setWordBook] = useState<Array<string>>(wordBook)
   const youtubeRegex = /(?:https?:\/\/)?(?:www\.)?(youtube\.com|youtu\.be)\/(watch\?v=([^&?/]+)|.+\/([^&?/]+))/;
   // TODO:　URLをチェックする処理を追加
   const submitBtn = () => {
@@ -172,8 +182,8 @@ function Video(props: videoProps): JSX.Element {
   useEffect(() => {
     const fetchYoutubecaptions = async () => {
       // await fetch('https://uqysdmlg6kbmdjhd437mtmcwbi0obaso.lambda-url.ap-northeast-1.on.aws', {
-      await fetch('http://localhost:9000/2015-03-31/functions/function/invocations', {
-      // const response = await fetch('https://ra6dyoi3q3.execute-api.ap-northeast-1.amazonaws.com/v1/function', {
+      // await fetch('http://localhost:9000/2015-03-31/functions/function/invocations', {
+      const response = await fetch('https://ra6dyoi3q3.execute-api.ap-northeast-1.amazonaws.com/v1/function', {
         method: 'POST',
         headers: {
           'Accept': 'application/json',
@@ -186,8 +196,8 @@ function Video(props: videoProps): JSX.Element {
       })
       .then(response => response.json())
       .then((responseJson: any) => {
-        // const data = responseJson//.body;本番
-        const data = JSON.parse(responseJson.body);
+        const data = responseJson//.body;本番
+        // const data = JSON.parse(responseJson.body);
         if(data.statusCode == "200") {
           setIsHaveCaption(true)
           setCaptions(JSON.parse(data.caption));

@@ -37,6 +37,7 @@ import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
 import oauth from 'axios-oauth-client'
 import { Float } from 'react-native/Libraries/Types/CodegenTypes';
 import Icon from 'react-native-vector-icons/FontAwesome';
+import { storage } from '../storage';
 
 
 function StudyWord(): JSX.Element {
